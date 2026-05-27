@@ -124,7 +124,7 @@ export async function createProduct(formData: FormData) {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      redirectWithMessage("/merci/nuova", "error", `La merce ${name} esiste gia.`);
+      redirectWithMessage("/merci/nuova", "error", `La merce ${name} esiste già.`);
     }
 
     redirectWithMessage("/merci/nuova", "error", "Impossibile salvare la merce.");
@@ -191,7 +191,7 @@ export async function updateProduct(formData: FormData) {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      redirectWithMessage(errorPath, "error", `La merce ${name} esiste gia.`);
+      redirectWithMessage(errorPath, "error", `La merce ${name} esiste già.`);
     }
 
     redirectWithMessage(errorPath, "error", "Impossibile aggiornare la merce.");

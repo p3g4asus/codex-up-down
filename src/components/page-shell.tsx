@@ -16,6 +16,7 @@ const links = [
   { href: "/merci/nuova", label: "Nuova merce" },
   { href: "/carico", label: "Carico" },
   { href: "/scarico", label: "Scarico" },
+  { href: "/about", label: "About" },
 ];
 
 export function PageShell({ title, description, children }: PageShellProps) {

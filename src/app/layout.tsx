@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, IBM_Plex_Mono, Plus_Jakarta_Sans } from "next/font/google";
+
+import { APP_DESCRIPTION, APP_NAME } from "@/lib/app-info";
+
 import "./globals.css";
 
 const jakartaSans = Plus_Jakarta_Sans({
@@ -20,8 +23,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Magazzino merci",
-  description: "Gestione carico e scarico merci con persistenza SQLite",
+  title: APP_NAME,
+  description: APP_DESCRIPTION,
   icons: {
     icon: [{ url: "/branding/cosi-logo.jpg", type: "image/jpeg" }],
     apple: [{ url: "/branding/cosi-logo.jpg", type: "image/jpeg" }],
