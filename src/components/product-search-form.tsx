@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
+import { withBasePath } from "@/lib/base-path";
+
 type ProductSearchFormProps = {
   query?: string;
   sort: string;
@@ -36,7 +38,7 @@ export function ProductSearchForm({ query, sort, dir }: ProductSearchFormProps) 
 
     setIsSubmitting(true);
     try {
-      router.push(params.toString() ? `/merci?${params.toString()}` : "/merci");
+      router.push(params.toString() ? `${withBasePath("/merci")}?${params.toString()}` : withBasePath("/merci"));
     } finally {
       setIsSubmitting(false);
     }
@@ -68,7 +70,7 @@ export function ProductSearchForm({ query, sort, dir }: ProductSearchFormProps) 
           {isSubmitting ? "Ricerca..." : "Cerca"}
         </button>
         <a
-          href="/merci"
+          href={withBasePath("/merci")}
           className="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400"
         >
           Azzera

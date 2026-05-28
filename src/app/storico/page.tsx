@@ -16,6 +16,7 @@ import {
   movementTypeLabels,
   type HistoryFilterParams,
 } from "@/lib/history";
+import { withBasePath } from "@/lib/base-path";
 import { prisma } from "@/lib/prisma";
 import { unitLabels } from "@/lib/units";
 
@@ -81,7 +82,7 @@ export default async function HistoryPage({ searchParams }: PageProps) {
 
   function buildPageHref(page: number) {
     const query = buildHistorySearchParams({ ...filters, page: String(page) });
-    return query ? `/storico?${query}` : "/storico";
+    return query ? `${withBasePath("/storico")}?${query}` : withBasePath("/storico");
   }
 
   function buildSortHref(nextSort: string) {
@@ -92,7 +93,7 @@ export default async function HistoryPage({ searchParams }: PageProps) {
       dir: nextDir,
       page: "1",
     });
-    return query ? `/storico?${query}` : "/storico";
+    return query ? `${withBasePath("/storico")}?${query}` : withBasePath("/storico");
   }
 
   function getSortIndicator(column: string) {

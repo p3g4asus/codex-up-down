@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Product } from "@prisma/client";
 
+import { withBasePath } from "@/lib/base-path";
 import { emitClientFeedback } from "@/lib/client-feedback";
 import { unitLabels } from "@/lib/units";
 
@@ -35,7 +36,7 @@ export function MovementForm({ mode, products }: MovementFormProps) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/movements", {
+      const response = await fetch(withBasePath("/api/movements"), {
         method: "POST",
         body: formData,
       });

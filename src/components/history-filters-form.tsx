@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { MovementType, Product } from "@prisma/client";
 
+import { withBasePath } from "@/lib/base-path";
 import { HISTORY_PAGE_SIZE_OPTIONS, type HistoryFilterParams } from "@/lib/history";
 
 type HistoryFiltersFormProps = {
@@ -37,8 +38,12 @@ export function HistoryFiltersForm({ filters, pageSize, products, sort, dir }: H
         ...(filters.dir ? { dir: filters.dir } : {}),
       }).toString()
     : "";
-  const csvHref = exportQuery ? `/storico/export?${exportQuery}` : "/storico/export";
-  const pdfHref = exportQuery ? `/storico/export/pdf?${exportQuery}` : "/storico/export/pdf";
+  const csvHref = exportQuery
+    ? `${withBasePath("/storico/export")}?${exportQuery}`
+    : withBasePath("/storico/export");
+  const pdfHref = exportQuery
+    ? `${withBasePath("/storico/export/pdf")}?${exportQuery}`
+    : withBasePath("/storico/export/pdf");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -62,7 +67,7 @@ export function HistoryFiltersForm({ filters, pageSize, products, sort, dir }: H
 
     setIsSubmitting(true);
     try {
-      router.push(params.toString() ? `/storico?${params.toString()}` : "/storico");
+      router.push(params.toString() ? `${withBasePath("/storico")}?${params.toString()}` : withBasePath("/storico"));
     } finally {
       setIsSubmitting(false);
     }
@@ -166,7 +171,7 @@ export function HistoryFiltersForm({ filters, pageSize, products, sort, dir }: H
           {isSubmitting ? "Applicazione..." : "Applica filtri"}
         </button>
         <a
-          href="/storico"
+          href={withBasePath("/storico")}
           className="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400"
         >
           Azzera

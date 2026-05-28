@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { withBasePath } from "@/lib/base-path";
 import { emitClientFeedback } from "@/lib/client-feedback";
 
 type DeleteMovementButtonProps = {
@@ -33,7 +34,7 @@ export function DeleteMovementButton({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/movements", {
+      const response = await fetch(withBasePath("/api/movements"), {
         method: "POST",
         body: formData,
       });

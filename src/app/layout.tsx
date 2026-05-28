@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, IBM_Plex_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/app-info";
+import { withBasePath } from "@/lib/base-path";
 
 import "./globals.css";
 
@@ -26,9 +27,9 @@ export const metadata: Metadata = {
   title: APP_NAME,
   description: APP_DESCRIPTION,
   icons: {
-    icon: [{ url: "/branding/cosi-logo.jpg", type: "image/jpeg" }],
-    apple: [{ url: "/branding/cosi-logo.jpg", type: "image/jpeg" }],
-    shortcut: [{ url: "/branding/cosi-logo.jpg", type: "image/jpeg" }],
+    icon: [{ url: withBasePath("/branding/cosi-logo.jpg"), type: "image/jpeg" }],
+    apple: [{ url: withBasePath("/branding/cosi-logo.jpg"), type: "image/jpeg" }],
+    shortcut: [{ url: withBasePath("/branding/cosi-logo.jpg"), type: "image/jpeg" }],
   },
 };
 

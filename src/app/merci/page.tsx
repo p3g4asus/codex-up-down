@@ -4,6 +4,7 @@ import { DeleteProductButton } from "@/components/delete-product-button";
 import { FeedbackBanner } from "@/components/feedback-banner";
 import { ProductSearchForm } from "@/components/product-search-form";
 import { PageShell } from "@/components/page-shell";
+import { withBasePath } from "@/lib/base-path";
 import { prisma } from "@/lib/prisma";
 import { unitLabels } from "@/lib/units";
 
@@ -38,7 +39,8 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   if (dir !== "asc") {
     returnQuery.set("dir", dir);
   }
-  const returnTo = returnQuery.toString() ? `/merci?${returnQuery.toString()}` : "/merci";
+  const baseProductsPath = withBasePath("/merci");
+  const returnTo = returnQuery.toString() ? `${baseProductsPath}?${returnQuery.toString()}` : baseProductsPath;
   const products = await prisma.product.findMany({
     where: query
       ? {
@@ -114,28 +116,28 @@ export default async function ProductsPage({ searchParams }: PageProps) {
               <thead className="bg-white/60 text-slate-500">
                 <tr>
                   <th className="px-6 py-4 font-medium">
-                    <a href={returnTo === "/merci" ? "/merci?sort=name&dir=desc" : `/merci?${new URLSearchParams({ ...(query ? { q: query } : {}), sort: "name", dir: sort === "name" && dir === "asc" ? "desc" : "asc" }).toString()}`} className="hover:text-slate-700">
+                    <a href={returnTo === baseProductsPath ? `${baseProductsPath}?sort=name&dir=desc` : `${baseProductsPath}?${new URLSearchParams({ ...(query ? { q: query } : {}), sort: "name", dir: sort === "name" && dir === "asc" ? "desc" : "asc" }).toString()}`} className="hover:text-slate-700">
                       Nome{sort === "name" ? (dir === "asc" ? " ↑" : " ↓") : ""}
                     </a>
                   </th>
                   <th className="px-6 py-4 font-medium">
-                    <a href={`/merci?${new URLSearchParams({ ...(query ? { q: query } : {}), sort: "description", dir: sort === "description" && dir === "asc" ? "desc" : "asc" }).toString()}`} className="hover:text-slate-700">
+                    <a href={`${baseProductsPath}?${new URLSearchParams({ ...(query ? { q: query } : {}), sort: "description", dir: sort === "description" && dir === "asc" ? "desc" : "asc" }).toString()}`} className="hover:text-slate-700">
                       Descrizione{sort === "description" ? (dir === "asc" ? " ↑" : " ↓") : ""}
                     </a>
                   </th>
                   <th className="px-6 py-4 font-medium">Unita</th>
                   <th className="px-6 py-4 font-medium">
-                    <a href={`/merci?${new URLSearchParams({ ...(query ? { q: query } : {}), sort: "alert", dir: sort === "alert" && dir === "asc" ? "desc" : "asc" }).toString()}`} className="hover:text-slate-700">
+                    <a href={`${baseProductsPath}?${new URLSearchParams({ ...(query ? { q: query } : {}), sort: "alert", dir: sort === "alert" && dir === "asc" ? "desc" : "asc" }).toString()}`} className="hover:text-slate-700">
                       Soglia alert{sort === "alert" ? (dir === "asc" ? " ↑" : " ↓") : ""}
                     </a>
                   </th>
                   <th className="px-6 py-4 font-medium">
-                    <a href={`/merci?${new URLSearchParams({ ...(query ? { q: query } : {}), sort: "stock", dir: sort === "stock" && dir === "asc" ? "desc" : "asc" }).toString()}`} className="hover:text-slate-700">
+                    <a href={`${baseProductsPath}?${new URLSearchParams({ ...(query ? { q: query } : {}), sort: "stock", dir: sort === "stock" && dir === "asc" ? "desc" : "asc" }).toString()}`} className="hover:text-slate-700">
                       Giacenza{sort === "stock" ? (dir === "asc" ? " ↑" : " ↓") : ""}
                     </a>
                   </th>
                   <th className="px-6 py-4 font-medium">
-                    <a href={`/merci?${new URLSearchParams({ ...(query ? { q: query } : {}), sort: "movements", dir: sort === "movements" && dir === "asc" ? "desc" : "asc" }).toString()}`} className="hover:text-slate-700">
+                    <a href={`${baseProductsPath}?${new URLSearchParams({ ...(query ? { q: query } : {}), sort: "movements", dir: sort === "movements" && dir === "asc" ? "desc" : "asc" }).toString()}`} className="hover:text-slate-700">
                       Movimenti{sort === "movements" ? (dir === "asc" ? " ↑" : " ↓") : ""}
                     </a>
                   </th>

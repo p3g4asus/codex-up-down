@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { PageShell } from "@/components/page-shell";
+import { withBasePath } from "@/lib/base-path";
 import { prisma } from "@/lib/prisma";
 import { unitLabels } from "@/lib/units";
 
@@ -36,7 +37,7 @@ export default async function Home() {
       <section className="reveal-section reveal-delay-1 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
         <article className="relative overflow-hidden rounded-[2rem] border border-white/70 shadow-panel">
           <Image
-            src="/branding/brand-locale-home.jpg"
+            src={withBasePath("/branding/brand-locale-home.jpg")}
             alt="Brand locale supermercato"
             width={1200}
             height={700}
@@ -57,7 +58,7 @@ export default async function Home() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
           <article className="relative overflow-hidden rounded-[2rem] border border-white/70 shadow-panel">
             <Image
-              src="/branding/panetteria-home.jpg"
+              src={withBasePath("/branding/panetteria-home.jpg")}
               alt="Reparto panetteria"
               width={900}
               height={500}
@@ -68,7 +69,7 @@ export default async function Home() {
           </article>
           <article className="relative overflow-hidden rounded-[2rem] border border-white/70 shadow-panel">
             <Image
-              src="/branding/gastronomia-home.jpg"
+              src={withBasePath("/branding/gastronomia-home.jpg")}
               alt="Reparto gastronomia"
               width={900}
               height={500}
