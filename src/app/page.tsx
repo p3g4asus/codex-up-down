@@ -41,6 +41,7 @@ export default async function Home() {
             alt="Brand locale supermercato"
             width={1200}
             height={700}
+            unoptimized
             className="h-[280px] w-full object-cover"
             priority
           />
@@ -62,6 +63,7 @@ export default async function Home() {
               alt="Reparto panetteria"
               width={900}
               height={500}
+              unoptimized
               className="h-[132px] w-full object-cover"
             />
             <div className="absolute inset-0 bg-slate-900/30" />
@@ -73,6 +75,7 @@ export default async function Home() {
               alt="Reparto gastronomia"
               width={900}
               height={500}
+              unoptimized
               className="h-[132px] w-full object-cover"
             />
             <div className="absolute inset-0 bg-slate-900/30" />
