@@ -1,22 +1,57 @@
 "use client";
 
 import { useId, useState } from "react";
+import { useRouter } from "next/navigation";
 
-import { deleteLatestMovement } from "@/app/actions";
+import { emitClientFeedback } from "@/lib/client-feedback";
 
 type DeleteMovementButtonProps = {
   movementId: number;
   productName: string;
-  returnTo: string;
 };
 
 export function DeleteMovementButton({
   movementId,
   productName,
-  returnTo,
 }: DeleteMovementButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const modalTitleId = useId();
+  const router = useRouter();
+
+  async function handleDelete(event: import("react").FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (isSubmitting) {
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    formData.set("action", "delete");
+    formData.set("movementId", String(movementId));
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/movements", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = (await response.json()) as { kind?: string; message?: string };
+      const kind = payload.kind === "success" ? "success" : "error";
+      const message = payload.message ?? "Operazione completata.";
+
+      emitClientFeedback({ kind, message });
+      if (kind === "success") {
+        router.refresh();
+      }
+      setIsOpen(false);
+    } catch {
+      emitClientFeedback({ kind: "error", message: "Impossibile contattare il server." });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <>
@@ -52,14 +87,14 @@ export function DeleteMovementButton({
               >
                 Annulla
               </button>
-              <form action={deleteLatestMovement}>
+              <form onSubmit={handleDelete}>
                 <input type="hidden" name="movementId" value={movementId} />
-                <input type="hidden" name="returnTo" value={returnTo} />
                 <button
                   type="submit"
-                  className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700"
+                  disabled={isSubmitting}
+                  className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-300"
                 >
-                  Conferma eliminazione
+                  {isSubmitting ? "Eliminazione..." : "Conferma eliminazione"}
                 </button>
               </form>
             </div>

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { updateProduct } from "@/app/actions";
 import { FeedbackBanner } from "@/components/feedback-banner";
 import { PageShell } from "@/components/page-shell";
 import { ProductForm } from "@/components/product-form";
@@ -60,8 +59,6 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         <section className="space-y-4">
           <FeedbackBanner kind={feedback?.kind} message={feedback?.message} />
           <ProductForm
-            action={updateProduct}
-            returnTo={returnTo}
             lockUnit={product._count.movements > 0}
             submitLabel="Salva modifiche"
             values={{

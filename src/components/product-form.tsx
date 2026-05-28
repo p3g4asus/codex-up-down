@@ -1,6 +1,10 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
 import { UnitOfMeasure } from "@prisma/client";
 
-import { createProduct } from "@/app/actions";
+import { emitClientFeedback } from "@/lib/client-feedback";
 import { unitLabels, unitOptions } from "@/lib/units";
 
 type ProductFormValues = {
@@ -12,24 +16,62 @@ type ProductFormValues = {
 };
 
 type ProductFormProps = {
-  action?: (formData: FormData) => void | Promise<void>;
-  returnTo?: string;
   lockUnit?: boolean;
   submitLabel?: string;
   values?: ProductFormValues;
 };
 
 export function ProductForm({
-  action = createProduct,
-  returnTo,
   lockUnit = false,
   submitLabel = "Salva merce",
   values,
 }: ProductFormProps) {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (isSubmitting) {
+      return;
+    }
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    formData.set("action", values?.id ? "update" : "create");
+    if (values?.id) {
+      formData.set("productId", String(values.id));
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = (await response.json()) as { kind?: string; message?: string };
+      const kind = payload.kind === "success" ? "success" : "error";
+      const message = payload.message ?? "Operazione completata.";
+
+      if (kind === "success" && !values?.id) {
+        form.reset();
+      }
+
+      emitClientFeedback({ kind, message });
+      if (kind === "success") {
+        router.refresh();
+      }
+    } catch {
+      emitClientFeedback({ kind: "error", message: "Impossibile contattare il server." });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
-    <form action={action} className="space-y-5 rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur">
+    <form onSubmit={handleSubmit} className="space-y-5 rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur">
       {values?.id ? <input type="hidden" name="productId" value={values.id} /> : null}
-      {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
       <div className="space-y-2">
         <label htmlFor="name" className="text-sm font-semibold text-slate-900">
           Nome merce
@@ -101,9 +143,10 @@ export function ProductForm({
       </div>
       <button
         type="submit"
+        disabled={isSubmitting}
         className="inline-flex items-center justify-center rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-accent-strong"
       >
-        {submitLabel}
+        {isSubmitting ? "Salvataggio..." : submitLabel}
       </button>
     </form>
   );

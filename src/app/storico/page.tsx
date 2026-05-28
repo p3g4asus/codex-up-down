@@ -1,12 +1,11 @@
 import { MovementType } from "@prisma/client";
 
-import { updateLatestMovementQuantity } from "@/app/actions";
-import { DeleteMovementButton } from "@/components/delete-movement-button";
 import { FeedbackBanner } from "@/components/feedback-banner";
+import { HistoryFiltersForm } from "@/components/history-filters-form";
 import { PageShell } from "@/components/page-shell";
+import { MovementRowActions } from "@/components/movement-row-actions";
 import { PrintButton } from "@/components/print-button";
 import {
-  HISTORY_PAGE_SIZE_OPTIONS,
   getHistoryPage,
   getHistoryPageSize,
   getHistoryOrderBy,
@@ -35,13 +34,6 @@ export default async function HistoryPage({ searchParams }: PageProps) {
   const pageSize = getHistoryPageSize(filters);
   const sort = getHistorySort(filters);
   const dir = getHistorySortDir(filters);
-  const exportQuery = buildHistorySearchParams({ ...filters, page: undefined });
-  const returnQuery = buildHistorySearchParams({
-    ...filters,
-    kind: undefined,
-    message: undefined,
-  });
-  const returnTo = returnQuery ? `/storico?${returnQuery}` : "/storico";
   const where = buildHistoryWhere(filters);
   const orderBy = getHistoryOrderBy(filters);
 
@@ -119,121 +111,7 @@ export default async function HistoryPage({ searchParams }: PageProps) {
       <FeedbackBanner kind={filters?.kind} message={filters?.message} />
       <section className="rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur print:hidden">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <form className="grid flex-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
-            <div className="space-y-2">
-              <label htmlFor="q" className="text-sm font-semibold text-slate-900">
-                Cerca merce
-              </label>
-              <input
-                id="q"
-                name="q"
-                type="search"
-                defaultValue={filters?.q ?? ""}
-                placeholder="Nome, descrizione o nota"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="productId" className="text-sm font-semibold text-slate-900">
-                Merce
-              </label>
-              <select
-                id="productId"
-                name="productId"
-                defaultValue={filters?.productId ?? ""}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
-              >
-                <option value="">Tutte le merci</option>
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="type" className="text-sm font-semibold text-slate-900">
-                Tipo movimento
-              </label>
-              <select
-                id="type"
-                name="type"
-                defaultValue={filters?.type ?? ""}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
-              >
-                <option value="">Tutti i movimenti</option>
-                <option value={MovementType.LOAD}>Carico</option>
-                <option value={MovementType.UNLOAD}>Scarico</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="dateFrom" className="text-sm font-semibold text-slate-900">
-                Dal giorno
-              </label>
-              <input
-                id="dateFrom"
-                name="dateFrom"
-                type="date"
-                defaultValue={filters?.dateFrom ?? ""}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="dateTo" className="text-sm font-semibold text-slate-900">
-                Al giorno
-              </label>
-              <input
-                id="dateTo"
-                name="dateTo"
-                type="date"
-                defaultValue={filters?.dateTo ?? ""}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="pageSize" className="text-sm font-semibold text-slate-900">
-                Righe per pagina
-              </label>
-              <select
-                id="pageSize"
-                name="pageSize"
-                defaultValue={String(pageSize)}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
-              >
-                {HISTORY_PAGE_SIZE_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-3 md:col-span-2 xl:col-span-6">
-              <button
-                type="submit"
-                className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-accent-strong"
-              >
-                Applica filtri
-              </button>
-              <a
-                href="/storico"
-                className="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400"
-              >
-                Azzera
-              </a>
-              <a
-                href={exportQuery ? `/storico/export?${exportQuery}` : "/storico/export"}
-                className="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400"
-              >
-                Esporta CSV
-              </a>
-              <a
-                href={exportQuery ? `/storico/export/pdf?${exportQuery}` : "/storico/export/pdf"}
-                className="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400"
-              >
-                Esporta PDF
-              </a>
-            </div>
-          </form>
+          <HistoryFiltersForm filters={filters} pageSize={pageSize} products={products} sort={sort} dir={dir} />
           <PrintButton />
         </div>
       </section>
@@ -323,37 +201,12 @@ export default async function HistoryPage({ searchParams }: PageProps) {
                         <td className="px-6 py-4 text-slate-600">{unitLabels[movement.product.unit]}</td>
                         <td className="px-6 py-4 text-slate-600">{movement.note || "-"}</td>
                         <td className="px-6 py-4 print:hidden">
-                          {canEditOrDelete ? (
-                            <div className="flex min-w-[240px] flex-col gap-2">
-                              <form action={updateLatestMovementQuantity} className="flex items-center gap-2">
-                                <input type="hidden" name="movementId" value={movement.id} />
-                                <input type="hidden" name="returnTo" value={returnTo} />
-                                <input
-                                  type="number"
-                                  name="quantity"
-                                  min={1}
-                                  step={1}
-                                  defaultValue={movement.quantity}
-                                  className="w-20 rounded-xl border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900"
-                                />
-                                <button
-                                  type="submit"
-                                  className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-accent hover:text-accent"
-                                >
-                                  Modifica
-                                </button>
-                              </form>
-                              <DeleteMovementButton
-                                movementId={movement.id}
-                                productName={movement.product.name}
-                                returnTo={returnTo}
-                              />
-                            </div>
-                          ) : (
-                            <span className="text-xs text-slate-500">
-                              Modifica/eliminazione disponibile solo per l&apos;ultimo movimento entro 5 minuti.
-                            </span>
-                          )}
+                          <MovementRowActions
+                            movementId={movement.id}
+                            productName={movement.product.name}
+                            quantity={movement.quantity}
+                            canEditOrDelete={canEditOrDelete}
+                          />
                         </td>
                       </tr>
                     );

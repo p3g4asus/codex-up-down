@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { DeleteProductButton } from "@/components/delete-product-button";
 import { FeedbackBanner } from "@/components/feedback-banner";
+import { ProductSearchForm } from "@/components/product-search-form";
 import { PageShell } from "@/components/page-shell";
 import { prisma } from "@/lib/prisma";
 import { unitLabels } from "@/lib/units";
@@ -98,37 +99,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
         </div>
 
         <div className="border-b border-slate-200/70 px-6 py-5">
-          <form className="flex flex-col gap-3 md:flex-row md:items-end">
-            <div className="w-full max-w-xl space-y-2">
-              <label htmlFor="q" className="text-sm font-semibold text-slate-900">
-                Cerca per nome o descrizione
-              </label>
-              <input
-                id="q"
-                name="q"
-                type="search"
-                defaultValue={feedback?.q ?? ""}
-                placeholder="Es. bancale mele o pallet frutta"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
-              />
-            </div>
-            <input type="hidden" name="sort" value={sort} />
-            <input type="hidden" name="dir" value={dir} />
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-accent-strong"
-              >
-                Cerca
-              </button>
-              <a
-                href="/merci"
-                className="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400"
-              >
-                Azzera
-              </a>
-            </div>
-          </form>
+          <ProductSearchForm query={feedback?.q ?? ""} sort={sort} dir={dir} />
         </div>
 
         {products.length === 0 ? (
@@ -196,7 +167,6 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                             productName={product.name}
                             productUnit={product.unit}
                             disabled={!canDelete}
-                            returnTo={returnTo}
                           />
                         </div>
                         {!canDelete ? (

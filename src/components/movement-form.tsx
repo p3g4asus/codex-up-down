@@ -1,6 +1,10 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
 import { Product } from "@prisma/client";
 
-import { registerLoad, registerUnload } from "@/app/actions";
+import { emitClientFeedback } from "@/lib/client-feedback";
 import { unitLabels } from "@/lib/units";
 
 type MovementFormProps = {
@@ -10,14 +14,52 @@ type MovementFormProps = {
 
 export function MovementForm({ mode, products }: MovementFormProps) {
   const isLoad = mode === "load";
-  const action = isLoad ? registerLoad : registerUnload;
   const submitLabel = isLoad ? "Conferma carico" : "Conferma scarico";
   const helperText = isLoad
     ? "Aumenta la giacenza di una merce gia censita."
     : "Riduce la giacenza solo se la disponibilita e sufficiente.";
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (isSubmitting) {
+      return;
+    }
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    formData.set("action", isLoad ? "load" : "unload");
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/movements", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = (await response.json()) as { kind?: string; message?: string };
+      const kind = payload.kind === "success" ? "success" : "error";
+      const message = payload.message ?? "Operazione completata.";
+
+      if (kind === "success") {
+        form.reset();
+      }
+
+      emitClientFeedback({ kind, message });
+      if (kind === "success") {
+        router.refresh();
+      }
+    } catch {
+      emitClientFeedback({ kind: "error", message: "Impossibile contattare il server." });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
-    <form action={action} className="space-y-5 rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur">
+    <form onSubmit={handleSubmit} className="space-y-5 rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur">
       <div className="space-y-1">
         <h2 className="text-xl font-semibold text-slate-950">
           {isLoad ? "Registra un carico" : "Registra uno scarico"}
@@ -75,10 +117,10 @@ export function MovementForm({ mode, products }: MovementFormProps) {
       </div>
       <button
         type="submit"
-        disabled={products.length === 0}
+        disabled={products.length === 0 || isSubmitting}
         className="inline-flex items-center justify-center rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:bg-slate-400"
       >
-        {submitLabel}
+        {isSubmitting ? "Invio..." : submitLabel}
       </button>
     </form>
   );

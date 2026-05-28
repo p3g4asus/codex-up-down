@@ -1,9 +1,10 @@
 "use client";
 
 import { useId, useState } from "react";
+import { useRouter } from "next/navigation";
 import { UnitOfMeasure } from "@prisma/client";
 
-import { deleteProduct } from "@/app/actions";
+import { emitClientFeedback } from "@/lib/client-feedback";
 import { unitLabels, unitOptions } from "@/lib/units";
 
 type DeleteProductButtonProps = {
@@ -11,7 +12,6 @@ type DeleteProductButtonProps = {
   productName: string;
   productUnit: UnitOfMeasure;
   disabled?: boolean;
-  returnTo?: string;
 };
 
 export function DeleteProductButton({
@@ -19,10 +19,45 @@ export function DeleteProductButton({
   productName,
   productUnit,
   disabled = false,
-  returnTo,
 }: DeleteProductButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const modalTitleId = useId();
+  const router = useRouter();
+
+  async function handleDelete(event: import("react").FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (isSubmitting) {
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    formData.set("action", "delete");
+    formData.set("productId", String(productId));
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = (await response.json()) as { kind?: string; message?: string };
+      const kind = payload.kind === "success" ? "success" : "error";
+      const message = payload.message ?? "Operazione completata.";
+
+      emitClientFeedback({ kind, message });
+      if (kind === "success") {
+        router.refresh();
+      }
+      setIsOpen(false);
+    } catch {
+      emitClientFeedback({ kind: "error", message: "Impossibile contattare il server." });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <>
@@ -67,9 +102,8 @@ export function DeleteProductButton({
               >
                 Annulla
               </button>
-              <form action={deleteProduct}>
+              <form onSubmit={handleDelete}>
                 <input type="hidden" name="productId" value={productId} />
-                {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
                 <select
                   id={`unit-${productId}`}
                   name="unit"
@@ -85,9 +119,10 @@ export function DeleteProductButton({
                 </select>
                 <button
                   type="submit"
-                  className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700"
+                  disabled={isSubmitting}
+                  className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-300"
                 >
-                  Conferma eliminazione
+                  {isSubmitting ? "Eliminazione..." : "Conferma eliminazione"}
                 </button>
               </form>
             </div>
