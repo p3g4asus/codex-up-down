@@ -98,6 +98,36 @@ function validateProductPayload(
   }
 }
 
+const EDITABLE_MOVEMENT_WINDOW_MS = 5 * 60 * 1000;
+
+function parsePositiveNumberOrRedirect(
+  value: string,
+  fieldName: string,
+  redirectPath: string,
+) {
+  try {
+    return parsePositiveNumber(value, fieldName);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Valore non valido.";
+    redirectWithMessage(redirectPath, "error", message);
+  }
+}
+
+function ensureMovementCanBeChanged(
+  movementCreatedAt: Date,
+  latestMovementId: number | undefined,
+  movementId: number,
+) {
+  if (!latestMovementId || latestMovementId !== movementId) {
+    throw new Error("Puoi modificare o eliminare solo l'ultimo movimento cronologico della merce.");
+  }
+
+  const elapsedMs = Date.now() - movementCreatedAt.getTime();
+  if (elapsedMs > EDITABLE_MOVEMENT_WINDOW_MS) {
+    throw new Error("Sono trascorsi piu di 5 minuti: movimento non piu modificabile o eliminabile.");
+  }
+}
+
 export async function createProduct(formData: FormData) {
   const name = getStringValue(formData, "name");
   const description = getStringValue(formData, "description");
@@ -317,4 +347,122 @@ export async function registerUnload(formData: FormData) {
     "/scarico",
     "Scarico registrato con successo.",
   );
+}
+
+export async function updateLatestMovementQuantity(formData: FormData) {
+  const returnPath = getReturnPath(formData, "/storico");
+  const movementId = parsePositiveNumberOrRedirect(
+    getStringValue(formData, "movementId"),
+    "Il movimento",
+    returnPath,
+  );
+  const quantity = parsePositiveNumberOrRedirect(
+    getStringValue(formData, "quantity"),
+    "La quantita",
+    returnPath,
+  );
+
+  try {
+    await prisma.$transaction(async (transaction) => {
+      const movement = await transaction.movement.findUnique({
+        where: { id: movementId },
+        include: { product: true },
+      });
+
+      if (!movement) {
+        throw new Error("Il movimento selezionato non esiste.");
+      }
+
+      const latestMovement = await transaction.movement.findFirst({
+        where: { productId: movement.productId },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        select: { id: true },
+      });
+
+      ensureMovementCanBeChanged(movement.createdAt, latestMovement?.id, movement.id);
+
+      const nextStock =
+        movement.type === MovementType.LOAD
+          ? movement.product.stock - movement.quantity + quantity
+          : movement.product.stock + movement.quantity - quantity;
+
+      if (nextStock < 0) {
+        throw new Error(
+          `Operazione non valida: la nuova quantita porterebbe la giacenza di ${movement.product.name} sotto zero.`,
+        );
+      }
+
+      await transaction.movement.update({
+        where: { id: movement.id },
+        data: { quantity },
+      });
+
+      await transaction.product.update({
+        where: { id: movement.productId },
+        data: { stock: nextStock },
+      });
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Impossibile aggiornare il movimento.";
+    redirectWithMessage(returnPath, "error", message);
+  }
+
+  refreshInventoryViews();
+  redirectWithMessage(returnPath, "success", "Movimento aggiornato con successo.");
+}
+
+export async function deleteLatestMovement(formData: FormData) {
+  const returnPath = getReturnPath(formData, "/storico");
+  const movementId = parsePositiveNumberOrRedirect(
+    getStringValue(formData, "movementId"),
+    "Il movimento",
+    returnPath,
+  );
+
+  try {
+    await prisma.$transaction(async (transaction) => {
+      const movement = await transaction.movement.findUnique({
+        where: { id: movementId },
+        include: { product: true },
+      });
+
+      if (!movement) {
+        throw new Error("Il movimento selezionato non esiste.");
+      }
+
+      const latestMovement = await transaction.movement.findFirst({
+        where: { productId: movement.productId },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        select: { id: true },
+      });
+
+      ensureMovementCanBeChanged(movement.createdAt, latestMovement?.id, movement.id);
+
+      const nextStock =
+        movement.type === MovementType.LOAD
+          ? movement.product.stock - movement.quantity
+          : movement.product.stock + movement.quantity;
+
+      if (nextStock < 0) {
+        throw new Error(
+          `Operazione non valida: l'eliminazione porterebbe la giacenza di ${movement.product.name} sotto zero.`,
+        );
+      }
+
+      await transaction.movement.delete({
+        where: { id: movement.id },
+      });
+
+      await transaction.product.update({
+        where: { id: movement.productId },
+        data: { stock: nextStock },
+      });
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Impossibile eliminare il movimento.";
+    redirectWithMessage(returnPath, "error", message);
+  }
+
+  refreshInventoryViews();
+  redirectWithMessage(returnPath, "success", "Movimento eliminato con successo.");
 }

@@ -10,6 +10,8 @@ export type HistoryFilterParams = {
   type?: string;
   dateFrom?: string;
   dateTo?: string;
+  kind?: string;
+  message?: string;
 };
 
 export const HISTORY_PAGE_SIZE = 12;

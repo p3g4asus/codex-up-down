@@ -36,8 +36,8 @@ export default async function Home() {
       <section className="reveal-section reveal-delay-1 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
         <article className="relative overflow-hidden rounded-[2rem] border border-white/70 shadow-panel">
           <Image
-            src="/branding/ortofrutta.jpg"
-            alt="Banco ortofrutta"
+            src="/branding/brand-locale-home.jpg"
+            alt="Brand locale supermercato"
             width={1200}
             height={700}
             className="h-[280px] w-full object-cover"
@@ -57,25 +57,25 @@ export default async function Home() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
           <article className="relative overflow-hidden rounded-[2rem] border border-white/70 shadow-panel">
             <Image
-              src="/branding/panetteria.jpg"
+              src="/branding/panetteria-home.jpg"
               alt="Reparto panetteria"
               width={900}
               height={500}
               className="h-[132px] w-full object-cover"
             />
             <div className="absolute inset-0 bg-slate-900/30" />
-            <p className="absolute bottom-3 left-4 text-sm font-semibold text-white">Panetteria</p>
+            <p className="absolute bottom-3 left-4 text-sm font-semibold text-white">Pizza</p>
           </article>
           <article className="relative overflow-hidden rounded-[2rem] border border-white/70 shadow-panel">
             <Image
-              src="/branding/pescheria.jpg"
-              alt="Reparto pescheria"
+              src="/branding/gastronomia-home.jpg"
+              alt="Reparto gastronomia"
               width={900}
               height={500}
               className="h-[132px] w-full object-cover"
             />
             <div className="absolute inset-0 bg-slate-900/30" />
-            <p className="absolute bottom-3 left-4 text-sm font-semibold text-white">Pescheria</p>
+            <p className="absolute bottom-3 left-4 text-sm font-semibold text-white">Gastronomia</p>
           </article>
         </div>
       </section>

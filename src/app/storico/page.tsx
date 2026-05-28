@@ -1,5 +1,8 @@
 import { MovementType } from "@prisma/client";
 
+import { updateLatestMovementQuantity } from "@/app/actions";
+import { DeleteMovementButton } from "@/components/delete-movement-button";
+import { FeedbackBanner } from "@/components/feedback-banner";
 import { PageShell } from "@/components/page-shell";
 import { PrintButton } from "@/components/print-button";
 import {
@@ -33,10 +36,16 @@ export default async function HistoryPage({ searchParams }: PageProps) {
   const sort = getHistorySort(filters);
   const dir = getHistorySortDir(filters);
   const exportQuery = buildHistorySearchParams({ ...filters, page: undefined });
+  const returnQuery = buildHistorySearchParams({
+    ...filters,
+    kind: undefined,
+    message: undefined,
+  });
+  const returnTo = returnQuery ? `/storico?${returnQuery}` : "/storico";
   const where = buildHistoryWhere(filters);
   const orderBy = getHistoryOrderBy(filters);
 
-  const [products, totalCount, groupedTotals, movements] = await Promise.all([
+  const [products, totalCount, groupedTotals, movements, latestMovementsByProduct] = await Promise.all([
     prisma.product.findMany({
       orderBy: { name: "asc" },
     }),
@@ -57,7 +66,20 @@ export default async function HistoryPage({ searchParams }: PageProps) {
         product: true,
       },
     }),
+    prisma.movement.findMany({
+      orderBy: [{ productId: "asc" }, { createdAt: "desc" }, { id: "desc" }],
+      distinct: ["productId"],
+      select: {
+        id: true,
+        productId: true,
+        createdAt: true,
+      },
+    }),
   ]);
+
+  const latestMovementByProduct = new Map(
+    latestMovementsByProduct.map((movement) => [movement.productId, movement]),
+  );
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -94,6 +116,7 @@ export default async function HistoryPage({ searchParams }: PageProps) {
       title="Storico movimenti"
       description="Consulta lo storico di carico e scarico, applica filtri per merce, tipo e intervallo date, quindi stampa un report pulito da archiviare o condividere."
     >
+      <FeedbackBanner kind={filters?.kind} message={filters?.message} />
       <section className="rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur print:hidden">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <form className="grid flex-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
@@ -271,29 +294,70 @@ export default async function HistoryPage({ searchParams }: PageProps) {
                     </th>
                     <th className="px-6 py-4 font-medium">Unita</th>
                     <th className="px-6 py-4 font-medium">Nota</th>
+                    <th className="px-6 py-4 font-medium print:hidden">Azioni</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200/80">
-                  {movements.map((movement) => (
-                    <tr key={movement.id} className="align-top text-slate-700">
-                      <td className="px-6 py-4 print:px-0">{dateFormatter.format(movement.createdAt)}</td>
-                      <td className="px-6 py-4 font-semibold text-slate-900">{movement.product.name}</td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                            movement.type === MovementType.LOAD
-                              ? "bg-emerald-100 text-emerald-900"
-                              : "bg-amber-100 text-amber-900"
-                          } print:border print:border-slate-300 print:bg-white print:text-slate-900`}
-                        >
-                          {movementTypeLabels[movement.type]}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">{movement.quantity}</td>
-                      <td className="px-6 py-4 text-slate-600">{unitLabels[movement.product.unit]}</td>
-                      <td className="px-6 py-4 text-slate-600">{movement.note || "-"}</td>
-                    </tr>
-                  ))}
+                  {movements.map((movement) => {
+                    const latestMovement = latestMovementByProduct.get(movement.productId);
+                    const editableUntil = movement.createdAt.getTime() + 5 * 60 * 1000;
+                    const canEditOrDelete =
+                      latestMovement?.id === movement.id && Date.now() <= editableUntil;
+
+                    return (
+                      <tr key={movement.id} className="align-top text-slate-700">
+                        <td className="px-6 py-4 print:px-0">{dateFormatter.format(movement.createdAt)}</td>
+                        <td className="px-6 py-4 font-semibold text-slate-900">{movement.product.name}</td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                              movement.type === MovementType.LOAD
+                                ? "bg-emerald-100 text-emerald-900"
+                                : "bg-amber-100 text-amber-900"
+                            } print:border print:border-slate-300 print:bg-white print:text-slate-900`}
+                          >
+                            {movementTypeLabels[movement.type]}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">{movement.quantity}</td>
+                        <td className="px-6 py-4 text-slate-600">{unitLabels[movement.product.unit]}</td>
+                        <td className="px-6 py-4 text-slate-600">{movement.note || "-"}</td>
+                        <td className="px-6 py-4 print:hidden">
+                          {canEditOrDelete ? (
+                            <div className="flex min-w-[240px] flex-col gap-2">
+                              <form action={updateLatestMovementQuantity} className="flex items-center gap-2">
+                                <input type="hidden" name="movementId" value={movement.id} />
+                                <input type="hidden" name="returnTo" value={returnTo} />
+                                <input
+                                  type="number"
+                                  name="quantity"
+                                  min={1}
+                                  step={1}
+                                  defaultValue={movement.quantity}
+                                  className="w-20 rounded-xl border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900"
+                                />
+                                <button
+                                  type="submit"
+                                  className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-accent hover:text-accent"
+                                >
+                                  Modifica
+                                </button>
+                              </form>
+                              <DeleteMovementButton
+                                movementId={movement.id}
+                                productName={movement.product.name}
+                                returnTo={returnTo}
+                              />
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-500">
+                              Modifica/eliminazione disponibile solo per l&apos;ultimo movimento entro 5 minuti.
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NEXT_DIST_DIR=.next-dev next dev",
+    "dev": "NEXT_DIST_DIR=.next-dev next dev -H 0.0.0.0 -p 3000",
     "build": "NEXT_DIST_DIR=.next-build next build",
-    "start": "NEXT_DIST_DIR=.next-build next start",
+    "start": "NEXT_DIST_DIR=.next-build next start -H 0.0.0.0 -p 3000",
     "lint": "eslint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push"
