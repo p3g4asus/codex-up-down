@@ -38,7 +38,7 @@ export function ProductSearchForm({ query, sort, dir }: ProductSearchFormProps) 
 
     setIsSubmitting(true);
     try {
-      router.push(params.toString() ? `${withBasePath("/merci")}?${params.toString()}` : withBasePath("/merci"));
+      router.push(params.toString() ? `/merci?${params.toString()}` : "/merci");
     } finally {
       setIsSubmitting(false);
     }

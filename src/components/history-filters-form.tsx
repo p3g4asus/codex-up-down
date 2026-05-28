@@ -67,7 +67,7 @@ export function HistoryFiltersForm({ filters, pageSize, products, sort, dir }: H
 
     setIsSubmitting(true);
     try {
-      router.push(params.toString() ? `${withBasePath("/storico")}?${params.toString()}` : withBasePath("/storico"));
+      router.push(params.toString() ? `/storico?${params.toString()}` : "/storico");
     } finally {
       setIsSubmitting(false);
     }
