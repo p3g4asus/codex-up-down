@@ -39,7 +39,6 @@ export function BrandLogo() {
           alt="Logo supermercato COSI"
           width={40}
           height={40}
-          unoptimized
           className="h-9 w-9 rounded-full border border-emerald-200 object-cover sm:h-10 sm:w-10"
           onError={() => setLogoError(true)}
           priority
