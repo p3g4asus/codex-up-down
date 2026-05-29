@@ -10,11 +10,13 @@ import { emitClientFeedback } from "@/lib/client-feedback";
 type DeleteMovementButtonProps = {
   movementId: number;
   productName: string;
+  requiresProtectedCode: boolean;
 };
 
 export function DeleteMovementButton({
   movementId,
   productName,
+  requiresProtectedCode,
 }: DeleteMovementButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -87,23 +89,40 @@ export function DeleteMovementButton({
                     Stai per eliminare l&apos;ultimo movimento di {productName}. Questa operazione non puo essere annullata.
                   </p>
                 </div>
-                <div className="mt-6 flex flex-wrap justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsOpen(false)}
-                    className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400"
-                  >
-                    Annulla
-                  </button>
-                  <form onSubmit={handleDelete}>
+                <div className="mt-6 space-y-4">
+                  <form onSubmit={handleDelete} className="space-y-4">
                     <input type="hidden" name="movementId" value={movementId} />
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-300"
-                    >
-                      {isSubmitting ? "Eliminazione..." : "Conferma eliminazione"}
-                    </button>
+                    {requiresProtectedCode ? (
+                      <div className="space-y-2">
+                        <label htmlFor={`protectedDeleteCode-${movementId}`} className="text-sm font-semibold text-slate-900">
+                          Codice segreto
+                        </label>
+                        <input
+                          id={`protectedDeleteCode-${movementId}`}
+                          type="password"
+                          name="protectedDeleteCode"
+                          required
+                          placeholder="Inserisci il codice segreto"
+                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 outline-none transition focus:border-accent"
+                        />
+                      </div>
+                    ) : null}
+                    <div className="flex flex-wrap justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsOpen(false)}
+                        className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400"
+                      >
+                        Annulla
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-300"
+                      >
+                        {isSubmitting ? "Eliminazione..." : "Conferma eliminazione"}
+                      </button>
+                    </div>
                   </form>
                 </div>
               </div>

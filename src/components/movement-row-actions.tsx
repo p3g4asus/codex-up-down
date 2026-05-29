@@ -12,6 +12,7 @@ type MovementRowActionsProps = {
   productName: string;
   quantity: number;
   canEditOrDelete: boolean;
+  requiresProtectedCode: boolean;
 };
 
 export function MovementRowActions({
@@ -19,6 +20,7 @@ export function MovementRowActions({
   productName,
   quantity,
   canEditOrDelete,
+  requiresProtectedCode,
 }: MovementRowActionsProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,13 +60,22 @@ export function MovementRowActions({
   if (!canEditOrDelete) {
     return (
       <span className="text-xs text-slate-500">
-        Modifica/eliminazione disponibile solo per l&apos;ultimo movimento entro 5 minuti.
+        Modifica/eliminazione disponibile solo per l&apos;ultimo movimento della merce.
       </span>
     );
   }
 
   return (
     <div className="flex min-w-[240px] flex-col gap-2">
+      <span
+        className={`inline-flex w-fit rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+          requiresProtectedCode
+            ? "bg-amber-100 text-amber-900"
+            : "bg-emerald-100 text-emerald-900"
+        }`}
+      >
+        {requiresProtectedCode ? "Codice richiesto" : "Codice non richiesto"}
+      </span>
       <form onSubmit={handleUpdate} className="flex items-center gap-2">
         <input
           type="number"
@@ -74,6 +85,15 @@ export function MovementRowActions({
           defaultValue={quantity}
           className="w-20 rounded-xl border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900"
         />
+        {requiresProtectedCode ? (
+          <input
+            type="password"
+            name="protectedDeleteCode"
+            required
+            placeholder="Codice segreto"
+            className="w-36 rounded-xl border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900"
+          />
+        ) : null}
         <button
           type="submit"
           disabled={isSubmitting}
@@ -82,7 +102,16 @@ export function MovementRowActions({
           {isSubmitting ? "..." : "Modifica"}
         </button>
       </form>
-      <DeleteMovementButton movementId={movementId} productName={productName} />
+      <p className="text-xs text-slate-500">
+        {requiresProtectedCode
+          ? "Movimento oltre 5 minuti: serve il codice segreto."
+          : "Movimento entro 5 minuti: codice segreto non richiesto."}
+      </p>
+      <DeleteMovementButton
+        movementId={movementId}
+        productName={productName}
+        requiresProtectedCode={requiresProtectedCode}
+      />
     </div>
   );
 }

@@ -2,6 +2,10 @@ import { Prisma, UnitOfMeasure } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 
+import {
+  ensureProtectedDeleteCode,
+  isProtectedDeleteCodeConfigured,
+} from "@/lib/protected-delete-code";
 import { prisma } from "@/lib/prisma";
 import { isUnitOfMeasure } from "@/lib/units";
 
@@ -63,6 +67,7 @@ export async function POST(request: Request) {
     if (action === "delete") {
       const productId = parsePositiveNumber(productIdValue, "La merce");
       const unit = parseUnit(getStringValue(formData, "unit"));
+      const protectedDeleteCode = getStringValue(formData, "protectedDeleteCode");
 
       const product = await prisma.product.findUnique({
         where: { id: productId },
@@ -78,7 +83,12 @@ export async function POST(request: Request) {
       }
 
       if (product._count.movements > 0) {
-        throw new Error("Non puoi eliminare una merce che ha movimenti registrati nello storico.");
+        const hasConfiguredCode = await isProtectedDeleteCodeConfigured();
+        if (!hasConfiguredCode) {
+          throw new Error("Eliminazione protetta non disponibile: configura PROTECTED_DELETE_CODE nel file .env.");
+        }
+
+        await ensureProtectedDeleteCode(protectedDeleteCode);
       }
 
       if (product.unit !== unit) {

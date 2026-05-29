@@ -2,7 +2,13 @@ import { MovementType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 
+import {
+  ensureProtectedDeleteCode,
+  isProtectedDeleteCodeConfigured,
+} from "@/lib/protected-delete-code";
 import { prisma } from "@/lib/prisma";
+
+const EDIT_WITHOUT_SECRET_WINDOW_MS = 5 * 60 * 1000;
 
 function getStringValue(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -52,12 +58,11 @@ async function ensureMovementCanBeChanged(movementId: number) {
     throw new Error("Puoi modificare solo l'ultimo movimento registrato per questa merce.");
   }
 
-  const ageInMinutes = (Date.now() - movement.createdAt.getTime()) / 1000 / 60;
-  if (ageInMinutes > 5) {
-    throw new Error("Puoi modificare o eliminare un movimento solo entro 5 minuti dalla registrazione.");
-  }
-
   return movement;
+}
+
+function requiresProtectedCodeForMovementChange(createdAt: Date) {
+  return Date.now() - createdAt.getTime() > EDIT_WITHOUT_SECRET_WINDOW_MS;
 }
 
 export async function POST(request: Request) {
@@ -110,8 +115,22 @@ export async function POST(request: Request) {
     if (action === "update") {
       const movementId = parsePositiveNumber(getStringValue(formData, "movementId"), "Il movimento");
       const quantity = parsePositiveNumber(getStringValue(formData, "quantity"), "La quantita");
+      const protectedDeleteCode = getStringValue(formData, "protectedDeleteCode");
 
       const movement = await ensureMovementCanBeChanged(movementId);
+      if (requiresProtectedCodeForMovementChange(movement.createdAt)) {
+        if (!protectedDeleteCode) {
+          throw new Error("Movimento oltre 5 minuti: inserisci il codice segreto per modificare.");
+        }
+
+        const hasConfiguredCode = await isProtectedDeleteCodeConfigured();
+        if (!hasConfiguredCode) {
+          throw new Error("Operazione protetta non disponibile: configura PROTECTED_DELETE_CODE nel file .env.");
+        }
+
+        await ensureProtectedDeleteCode(protectedDeleteCode);
+      }
+
       const product = movement.product;
       const quantityDelta = quantity - movement.quantity;
       const nextStock = movement.type === MovementType.LOAD ? product.stock + quantityDelta : product.stock - quantityDelta;
@@ -137,8 +156,22 @@ export async function POST(request: Request) {
 
     if (action === "delete") {
       const movementId = parsePositiveNumber(getStringValue(formData, "movementId"), "Il movimento");
+      const protectedDeleteCode = getStringValue(formData, "protectedDeleteCode");
 
       const movement = await ensureMovementCanBeChanged(movementId);
+      if (requiresProtectedCodeForMovementChange(movement.createdAt)) {
+        if (!protectedDeleteCode) {
+          throw new Error("Movimento oltre 5 minuti: inserisci il codice segreto per eliminare.");
+        }
+
+        const hasConfiguredCode = await isProtectedDeleteCodeConfigured();
+        if (!hasConfiguredCode) {
+          throw new Error("Operazione protetta non disponibile: configura PROTECTED_DELETE_CODE nel file .env.");
+        }
+
+        await ensureProtectedDeleteCode(protectedDeleteCode);
+      }
+
       const product = movement.product;
       const nextStock = movement.type === MovementType.LOAD
         ? product.stock - movement.quantity

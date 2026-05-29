@@ -146,8 +146,6 @@ export default async function ProductsPage({ searchParams }: PageProps) {
               </thead>
               <tbody className="divide-y divide-slate-200/80">
                 {products.map((product) => {
-                  const canDelete = product._count.movements === 0;
-
                   return (
                     <tr key={product.id} className="align-top text-slate-700">
                       <td className="px-6 py-4 font-semibold text-slate-900">{product.name}</td>
@@ -168,12 +166,12 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                             productId={product.id}
                             productName={product.name}
                             productUnit={product.unit}
-                            disabled={!canDelete}
+                            movementCount={product._count.movements}
                           />
                         </div>
-                        {!canDelete ? (
+                        {product._count.movements > 0 ? (
                           <p className="mt-2 text-xs leading-5 text-slate-500">
-                            Elimina disponibile solo se non esistono movimenti nello storico.
+                            Eliminazione protetta: per merci con movimenti viene richiesto un codice segreto.
                           </p>
                         ) : null}
                       </td>

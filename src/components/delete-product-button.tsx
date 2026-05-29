@@ -13,20 +13,21 @@ type DeleteProductButtonProps = {
   productId: number;
   productName: string;
   productUnit: UnitOfMeasure;
-  disabled?: boolean;
+  movementCount?: number;
 };
 
 export function DeleteProductButton({
   productId,
   productName,
   productUnit,
-  disabled = false,
+  movementCount = 0,
 }: DeleteProductButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const modalTitleId = useId();
   const router = useRouter();
+  const requiresProtectedDeleteCode = movementCount > 0;
 
   useEffect(() => {
     setIsMounted(true);
@@ -70,9 +71,8 @@ export function DeleteProductButton({
     <>
       <button
         type="button"
-        disabled={disabled}
         onClick={() => setIsOpen(true)}
-        className="rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
+        className="rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
       >
         Elimina
       </button>
@@ -93,6 +93,11 @@ export function DeleteProductButton({
                   <p className="text-sm leading-6 text-slate-600">
                     Stai per eliminare la merce {productName}. Questa operazione non puo essere annullata.
                   </p>
+                  {requiresProtectedDeleteCode ? (
+                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+                      Questa merce ha {movementCount} movimenti nello storico: per eliminarla devi inserire il codice segreto di protezione.
+                    </p>
+                  ) : null}
                   <div className="space-y-2">
                     <label htmlFor={`unit-${productId}`} className="text-sm font-semibold text-slate-900">
                       Conferma unita di misura
@@ -125,6 +130,21 @@ export function DeleteProductButton({
                         </option>
                       ))}
                     </select>
+                    {requiresProtectedDeleteCode ? (
+                      <div className="mb-4 space-y-2">
+                        <label htmlFor={`protected-delete-${productId}`} className="text-sm font-semibold text-slate-900">
+                          Codice segreto eliminazione
+                        </label>
+                        <input
+                          id={`protected-delete-${productId}`}
+                          name="protectedDeleteCode"
+                          type="password"
+                          required
+                          placeholder="Inserisci codice segreto"
+                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-accent"
+                        />
+                      </div>
+                    ) : null}
                     <button
                       type="submit"
                       disabled={isSubmitting}

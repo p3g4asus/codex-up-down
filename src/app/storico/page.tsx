@@ -179,9 +179,9 @@ export default async function HistoryPage({ searchParams }: PageProps) {
                 <tbody className="divide-y divide-slate-200/80">
                   {movements.map((movement) => {
                     const latestMovement = latestMovementByProduct.get(movement.productId);
-                    const editableUntil = movement.createdAt.getTime() + 5 * 60 * 1000;
-                    const canEditOrDelete =
-                      latestMovement?.id === movement.id && Date.now() <= editableUntil;
+                    const canEditOrDelete = latestMovement?.id === movement.id;
+                    const requiresProtectedCode =
+                      canEditOrDelete && Date.now() - movement.createdAt.getTime() > 5 * 60 * 1000;
 
                     return (
                       <tr key={movement.id} className="align-top text-slate-700">
@@ -207,6 +207,7 @@ export default async function HistoryPage({ searchParams }: PageProps) {
                             productName={movement.product.name}
                             quantity={movement.quantity}
                             canEditOrDelete={canEditOrDelete}
+                            requiresProtectedCode={requiresProtectedCode}
                           />
                         </td>
                       </tr>
