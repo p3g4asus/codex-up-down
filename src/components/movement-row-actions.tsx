@@ -24,6 +24,7 @@ export function MovementRowActions({
 }: MovementRowActionsProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [protectedCode, setProtectedCode] = useState("");
 
   async function handleUpdate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -91,6 +92,8 @@ export function MovementRowActions({
             name="protectedDeleteCode"
             required
             placeholder="Codice segreto"
+            value={protectedCode}
+            onChange={(event) => setProtectedCode(event.currentTarget.value)}
             className="w-36 rounded-xl border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900"
           />
         ) : null}
@@ -111,6 +114,8 @@ export function MovementRowActions({
         movementId={movementId}
         productName={productName}
         requiresProtectedCode={requiresProtectedCode}
+        protectedCode={protectedCode}
+        onProtectedCodeChange={setProtectedCode}
       />
     </div>
   );

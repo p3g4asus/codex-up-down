@@ -11,12 +11,16 @@ type DeleteMovementButtonProps = {
   movementId: number;
   productName: string;
   requiresProtectedCode: boolean;
+  protectedCode: string;
+  onProtectedCodeChange: (value: string) => void;
 };
 
 export function DeleteMovementButton({
   movementId,
   productName,
   requiresProtectedCode,
+  protectedCode,
+  onProtectedCodeChange,
 }: DeleteMovementButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -103,6 +107,8 @@ export function DeleteMovementButton({
                           name="protectedDeleteCode"
                           required
                           placeholder="Inserisci il codice segreto"
+                          value={protectedCode}
+                          onChange={(event) => onProtectedCodeChange(event.currentTarget.value)}
                           className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 outline-none transition focus:border-accent"
                         />
                       </div>
