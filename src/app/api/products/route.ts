@@ -45,6 +45,22 @@ function parseUnit(value: string) {
   return value as UnitOfMeasure;
 }
 
+function parseProductCode(value: string) {
+  if (!value) {
+    throw new Error("Il codice alfanumerico e obbligatorio.");
+  }
+
+  if (!/^[A-Za-z0-9]+$/.test(value)) {
+    throw new Error("Il codice alfanumerico deve contenere solo lettere e numeri.");
+  }
+
+  return value.toUpperCase();
+}
+
+function parsePlu(value: string) {
+  return parsePositiveNumber(value, "Il PLU");
+}
+
 function refreshInventoryViews() {
   revalidatePath("/");
   revalidatePath("/storico");
@@ -104,11 +120,13 @@ export async function POST(request: Request) {
     if (productIdValue) {
       const productId = parsePositiveNumber(productIdValue, "La merce");
       const name = getStringValue(formData, "name");
+      const code = parseProductCode(getStringValue(formData, "code"));
+      const plu = parsePlu(getStringValue(formData, "plu"));
       const description = getStringValue(formData, "description");
       const unit = parseUnit(getStringValue(formData, "unit"));
       const alertThreshold = parseOptionalPositiveNumber(
         getStringValue(formData, "alertThreshold"),
-        "La soglia di alert",
+        "Il venduto previsto mensile",
       );
 
       if (!name || !unit) {
@@ -136,6 +154,8 @@ export async function POST(request: Request) {
         where: { id: productId },
         data: {
           name,
+          code,
+          plu,
           description: description || null,
           unit,
           alertThreshold,
@@ -149,11 +169,13 @@ export async function POST(request: Request) {
     }
 
     const name = getStringValue(formData, "name");
+    const code = parseProductCode(getStringValue(formData, "code"));
+    const plu = parsePlu(getStringValue(formData, "plu"));
     const description = getStringValue(formData, "description");
     const unit = parseUnit(getStringValue(formData, "unit"));
     const alertThreshold = parseOptionalPositiveNumber(
       getStringValue(formData, "alertThreshold"),
-      "La soglia di alert",
+      "Il venduto previsto mensile",
     );
 
     if (!name || !unit) {
@@ -163,6 +185,8 @@ export async function POST(request: Request) {
     await prisma.product.create({
       data: {
         name,
+        code,
+        plu,
         description: description || null,
         unit,
         alertThreshold,
@@ -173,7 +197,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ kind: "success", message: `Merce ${name} registrata.` });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return jsonError(`La merce ${getStringValue(formData, "name")} esiste già.`);
+      return jsonError("Nome, codice alfanumerico o PLU gia esistenti.");
     }
 
     const message = error instanceof Error ? error.message : "Impossibile salvare la merce.";

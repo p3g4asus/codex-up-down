@@ -1,6 +1,11 @@
 import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from "pdf-lib";
 
 import { buildHistoryWhere, movementTypeLabels } from "@/lib/history";
+import {
+  buildMonthlyReportRows,
+  formatMonthlyDelta,
+  getCurrentMonthRange,
+} from "@/lib/monthly-report";
 import { prisma } from "@/lib/prisma";
 import { unitLabels } from "@/lib/units";
 
@@ -54,6 +59,66 @@ function drawTableHeader(page: PDFPage, fonts: { bold: PDFFont }, yTop: number) 
   });
 }
 
+function drawMonthlySummaryHeader(page: PDFPage, fonts: { bold: PDFFont }, yTop: number) {
+  const y = topY(page.getHeight(), yTop, 10);
+
+  page.drawText("Merce", { x: MARGIN, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
+  page.drawText("Previsto al giorno corrente", { x: 220, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
+  page.drawText("Scaricato nel mese", { x: 370, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
+  page.drawText("Scostamento", { x: 490, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
+
+  page.drawLine({
+    start: { x: MARGIN, y: page.getHeight() - yTop - 16 },
+    end: { x: PAGE_WIDTH - MARGIN, y: page.getHeight() - yTop - 16 },
+    thickness: 1,
+    color: toPdfColor("#CBD5E1"),
+  });
+}
+
+function drawMonthlyDeltaBadge(page: PDFPage, delta: number | null, x: number, yTop: number, fonts: { regular: PDFFont; bold: PDFFont }) {
+  const label =
+    delta === null
+      ? "-"
+      : delta > 0
+        ? `Sopra attese ${formatMonthlyDelta(delta)}`
+        : delta < 0
+          ? `Sotto attese ${formatMonthlyDelta(delta)}`
+          : "In linea 0";
+  const fill =
+    delta === null
+      ? "#F1F5F9"
+      : delta > 0
+        ? "#DCFCE7"
+        : "#FEE2E2";
+  const textColor =
+    delta === null
+      ? "#475569"
+      : delta > 0
+        ? "#166534"
+        : "#B91C1C";
+  const badgeWidth = delta === null ? 18 : delta > 0 ? 112 : delta < 0 ? 112 : 70;
+  const badgeHeight = 14;
+  const badgeY = page.getHeight() - yTop - badgeHeight + 2;
+
+  page.drawRectangle({
+    x,
+    y: badgeY,
+    width: badgeWidth,
+    height: badgeHeight,
+    color: toPdfColor(fill),
+    borderColor: toPdfColor(fill),
+    borderWidth: 1,
+  });
+
+  page.drawText(label, {
+    x: x + 4,
+    y: badgeY + 3,
+    size: 8,
+    font: fonts.bold,
+    color: toPdfColor(textColor),
+  });
+}
+
 function drawPageFooter(page: PDFPage, fonts: { regular: PDFFont }, pageNumber: number, totalPages: number) {
   page.drawLine({
     start: { x: MARGIN, y: 32 },
@@ -88,6 +153,27 @@ export async function GET(request: Request) {
       product: true,
     },
   });
+  const currentMonthRange = getCurrentMonthRange();
+  const products = await prisma.product.findMany({
+    orderBy: { name: "asc" },
+  });
+  const monthlyUnloadedTotals = await prisma.movement.groupBy({
+    by: ["productId"],
+    where: {
+      type: "UNLOAD",
+      createdAt: {
+        gte: currentMonthRange.start,
+        lte: currentMonthRange.end,
+      },
+    },
+    _sum: {
+      quantity: true,
+    },
+  });
+  const monthlyReportRows = buildMonthlyReportRows(
+    products,
+    new Map(monthlyUnloadedTotals.map((row) => [row.productId, row._sum.quantity ?? 0])),
+  );
 
   const totalLoaded = movements
     .filter((movement) => movement.type === "LOAD")
@@ -180,6 +266,53 @@ export async function GET(request: Request) {
   }
 
   yTop += 78;
+
+  page.drawText("Riepilogo mensile per merce", {
+    x: MARGIN,
+    y: topY(page.getHeight(), yTop, 14),
+    size: 14,
+    font: helveticaBold,
+    color: toPdfColor("#0F172A"),
+  });
+  yTop += 22;
+
+  drawMonthlySummaryHeader(page, { bold: helveticaBold }, yTop);
+  yTop += 22;
+
+  for (const row of monthlyReportRows) {
+    const rowHeight = 18;
+    if (yTop + rowHeight > PAGE_HEIGHT - MARGIN) {
+      page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+      yTop = 40;
+      page.drawText("Riepilogo mensile per merce", {
+        x: MARGIN,
+        y: topY(page.getHeight(), yTop, 14),
+        size: 14,
+        font: helveticaBold,
+        color: toPdfColor("#0F172A"),
+      });
+      yTop += 22;
+      drawMonthlySummaryHeader(page, { bold: helveticaBold }, yTop);
+      yTop += 22;
+    }
+
+    const rowY = topY(page.getHeight(), yTop, 9);
+    page.drawText(row.productName, { x: MARGIN, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 175 });
+    page.drawText(row.expectedSoldToDate?.toFixed(2) ?? "-", { x: 220, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 130 });
+    page.drawText(String(row.unloadedInMonth), { x: 370, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 90 });
+    drawMonthlyDeltaBadge(page, row.delta, 490, yTop, { regular: helvetica, bold: helveticaBold });
+
+    page.drawLine({
+      start: { x: MARGIN, y: page.getHeight() - yTop - rowHeight - 4 },
+      end: { x: PAGE_WIDTH - MARGIN, y: page.getHeight() - yTop - rowHeight - 4 },
+      thickness: 1,
+      color: toPdfColor("#E2E8F0"),
+    });
+
+    yTop += rowHeight + 10;
+  }
+
+  yTop += 6;
   drawTableHeader(page, { bold: helveticaBold }, yTop);
   yTop += 24;
 

@@ -64,6 +64,8 @@ export default async function EditProductPage({ params, searchParams }: PageProp
             values={{
               id: product.id,
               name: product.name,
+              code: product.code ?? undefined,
+              plu: product.plu ?? undefined,
               description: product.description,
               unit: product.unit,
               alertThreshold: product.alertThreshold,
@@ -87,7 +89,7 @@ export default async function EditProductPage({ params, searchParams }: PageProp
               <dd className="text-lg font-semibold text-slate-950">{product._count.movements}</dd>
             </div>
             <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3">
-              <dt className="font-medium text-slate-500">Soglia alert</dt>
+              <dt className="font-medium text-slate-500">Venduto previsto mensile</dt>
               <dd className="text-lg font-semibold text-slate-950">{product.alertThreshold ?? "-"}</dd>
             </div>
           </dl>

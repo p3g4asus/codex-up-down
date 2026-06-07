@@ -11,7 +11,7 @@ type PageShellProps = {
 
 const links = [
   { href: "/", label: "Magazzino" },
-  { href: "/storico", label: "Storico" },
+  { href: "/report", label: "Report" },
   { href: "/merci", label: "Gestione merci" },
   { href: "/merci/nuova", label: "Nuova merce" },
   { href: "/carico", label: "Carico" },

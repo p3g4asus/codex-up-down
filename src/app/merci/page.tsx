@@ -21,6 +21,8 @@ type PageProps = {
 export default async function ProductsPage({ searchParams }: PageProps) {
   const feedback = searchParams ? await searchParams : undefined;
   const query = feedback?.q?.trim();
+  const parsedQueryPlu = query ? Number(query) : NaN;
+  const hasNumericQuery = Number.isInteger(parsedQueryPlu) && parsedQueryPlu > 0;
   const sort =
     feedback?.sort === "description" ||
     feedback?.sort === "stock" ||
@@ -55,6 +57,18 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                 contains: query,
               },
             },
+            {
+              code: {
+                contains: query,
+              },
+            },
+            ...(hasNumericQuery
+              ? [
+                  {
+                    plu: parsedQueryPlu,
+                  },
+                ]
+              : []),
           ],
         }
       : undefined,
@@ -126,9 +140,11 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                     </a>
                   </th>
                   <th className="px-6 py-4 font-medium">Unita</th>
+                  <th className="px-6 py-4 font-medium">Codice</th>
+                  <th className="px-6 py-4 font-medium">PLU</th>
                   <th className="px-6 py-4 font-medium">
                     <a href={`${baseProductsPath}?${new URLSearchParams({ ...(query ? { q: query } : {}), sort: "alert", dir: sort === "alert" && dir === "asc" ? "desc" : "asc" }).toString()}`} className="hover:text-slate-700">
-                      Soglia alert{sort === "alert" ? (dir === "asc" ? " ↑" : " ↓") : ""}
+                      Venduto mese{sort === "alert" ? (dir === "asc" ? " ↑" : " ↓") : ""}
                     </a>
                   </th>
                   <th className="px-6 py-4 font-medium">
@@ -151,6 +167,8 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                       <td className="px-6 py-4 font-semibold text-slate-900">{product.name}</td>
                       <td className="px-6 py-4 leading-6 text-slate-600">{product.description || "-"}</td>
                       <td className="px-6 py-4 text-slate-600">{unitLabels[product.unit]}</td>
+                      <td className="px-6 py-4 text-slate-600">{product.code ?? "-"}</td>
+                      <td className="px-6 py-4 text-slate-600">{product.plu ?? "-"}</td>
                       <td className="px-6 py-4 text-slate-600">{product.alertThreshold ?? "-"}</td>
                       <td className="px-6 py-4">{product.stock} {unitLabels[product.unit]}</td>
                       <td className="px-6 py-4">{product._count.movements}</td>

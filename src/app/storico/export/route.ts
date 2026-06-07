@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { buildHistoryWhere, movementTypeLabels } from "@/lib/history";
+import {
+  buildMonthlyReportRows,
+  formatMonthlyDelta,
+  getCurrentMonthRange,
+} from "@/lib/monthly-report";
 import { unitLabels } from "@/lib/units";
 
 const csvDateFormatter = new Intl.DateTimeFormat("sv-SE", {
@@ -30,6 +35,55 @@ export async function GET(request: Request) {
     },
   });
 
+  const currentMonthRange = getCurrentMonthRange();
+  const products = await prisma.product.findMany({
+    orderBy: { name: "asc" },
+  });
+  const monthlyUnloadedTotals = await prisma.movement.groupBy({
+    by: ["productId"],
+    where: {
+      type: "UNLOAD",
+      createdAt: {
+        gte: currentMonthRange.start,
+        lte: currentMonthRange.end,
+      },
+    },
+    _sum: {
+      quantity: true,
+    },
+  });
+  const monthlyReportRows = buildMonthlyReportRows(
+    products,
+    new Map(monthlyUnloadedTotals.map((row) => [row.productId, row._sum.quantity ?? 0])),
+  );
+
+  const summaryHeader = [
+    "Riepilogo mensile per merce",
+    "Merce",
+    "Previsto al giorno corrente",
+    "Scaricato nel mese",
+    "Scostamento",
+    "Esito scostamento",
+    "Unita",
+  ];
+  const summaryRows = monthlyReportRows.map((row) => [
+    escapeCsv("Riepilogo mensile per merce"),
+    escapeCsv(row.productName),
+    escapeCsv(row.expectedSoldToDate?.toFixed(2) ?? "-"),
+    escapeCsv(row.unloadedInMonth),
+    escapeCsv(formatMonthlyDelta(row.delta)),
+    escapeCsv(
+      row.delta === null
+        ? "Nessun dato"
+        : row.delta > 0
+          ? "Sopra attese"
+          : row.delta < 0
+            ? "Sotto attese"
+            : "In linea",
+    ),
+    escapeCsv(unitLabels[row.unit]),
+  ]);
+
   const header = ["Data", "Merce", "Tipo", "Quantita", "Unita", "Nota"];
   const rows = movements.map((movement) => [
     escapeCsv(csvDateFormatter.format(movement.createdAt)),
@@ -40,7 +94,13 @@ export async function GET(request: Request) {
     escapeCsv(movement.note ?? ""),
   ]);
 
-  const csv = [header.map(escapeCsv).join(","), ...rows.map((row) => row.join(","))].join("\n");
+  const csv = [
+    summaryHeader.map(escapeCsv).join(","),
+    ...summaryRows.map((row) => row.join(",")),
+    "",
+    header.map(escapeCsv).join(","),
+    ...rows.map((row) => row.join(",")),
+  ].join("\n");
   const timestamp = new Date().toISOString().slice(0, 10);
 
   return new Response(csv, {

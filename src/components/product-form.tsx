@@ -11,6 +11,8 @@ import { unitLabels, unitOptions } from "@/lib/units";
 type ProductFormValues = {
   id?: number;
   name?: string;
+  code?: string;
+  plu?: number;
   description?: string | null;
   unit?: UnitOfMeasure;
   alertThreshold?: number | null;
@@ -99,6 +101,39 @@ export function ProductForm({
           className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
         />
       </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <label htmlFor="code" className="text-sm font-semibold text-slate-900">
+            Codice alfanumerico
+          </label>
+          <input
+            id="code"
+            name="code"
+            required
+            pattern="[A-Za-z0-9]+"
+            title="Usa solo lettere e numeri"
+            placeholder="Es. AX45B9"
+            defaultValue={values?.code ?? ""}
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
+          />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="plu" className="text-sm font-semibold text-slate-900">
+            PLU numerico
+          </label>
+          <input
+            id="plu"
+            name="plu"
+            type="number"
+            min={1}
+            step={1}
+            required
+            placeholder="Es. 123456"
+            defaultValue={values?.plu ?? ""}
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
+          />
+        </div>
+      </div>
       <div className="space-y-2">
         <label htmlFor="unit" className="text-sm font-semibold text-slate-900">
           Unita di misura
@@ -126,7 +161,7 @@ export function ProductForm({
       </div>
       <div className="space-y-2">
         <label htmlFor="alertThreshold" className="text-sm font-semibold text-slate-900">
-          Soglia alert (facoltativa)
+          Venduto previsto mensile (facoltativo)
         </label>
         <input
           id="alertThreshold"
@@ -134,12 +169,13 @@ export function ProductForm({
           type="number"
           min={1}
           step={1}
-          placeholder="Es. 10"
+          placeholder="Es. 120"
           defaultValue={values?.alertThreshold ?? ""}
           className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
         />
         <p className="text-xs leading-5 text-slate-500">
-          Se impostata, quando la giacenza scende sotto questo valore la merce appare negli articoli in esaurimento.
+          Se impostato, l&apos;alert scatta quando la giacenza e inferiore al venduto previsto per il resto del mese,
+          assumendo una vendita uniforme giorno per giorno.
         </p>
       </div>
       <button

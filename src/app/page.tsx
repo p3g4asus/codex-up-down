@@ -3,6 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { PageShell } from "@/components/page-shell";
+import {
+  getExpectedMonthlyRemainingSales,
+  isBelowExpectedMonthlySalesPace,
+} from "@/lib/alert-forecast";
 import { withBasePath } from "@/lib/base-path";
 import { prisma } from "@/lib/prisma";
 import { unitLabels } from "@/lib/units";
@@ -26,7 +30,7 @@ export default async function Home() {
   };
 
   const lowStockProducts = products.filter(
-    (product) => product.alertThreshold !== null && product.stock < product.alertThreshold,
+    (product) => isBelowExpectedMonthlySalesPace(product.stock, product.alertThreshold),
   );
 
   return (
@@ -127,7 +131,7 @@ export default async function Home() {
                 </thead>
                 <tbody className="divide-y divide-slate-200/80">
                   {products.map((product) => {
-                    const isLowStock = product.alertThreshold !== null && product.stock < product.alertThreshold;
+                    const isLowStock = isBelowExpectedMonthlySalesPace(product.stock, product.alertThreshold);
 
                     return (
                       <tr key={product.id} className="align-top text-slate-700">
@@ -136,7 +140,7 @@ export default async function Home() {
                             <span>{product.name}</span>
                             {isLowStock ? (
                               <span className="rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-rose-800">
-                                Sotto soglia
+                                Ritmo critico
                               </span>
                             ) : null}
                           </div>
@@ -159,19 +163,29 @@ export default async function Home() {
 
         <aside className="space-y-6">
           <div className="rounded-[2rem] border border-rose-200 bg-rose-50/80 p-6 shadow-panel backdrop-blur">
-            <h2 className="text-xl font-semibold text-rose-900">Articoli in esaurimento</h2>
+            <h2 className="text-xl font-semibold text-rose-900">Articoli a rischio esaurimento</h2>
             {lowStockProducts.length === 0 ? (
               <p className="mt-3 text-sm leading-6 text-rose-900/80">
-                Nessun articolo sotto soglia al momento.
+                Nessun articolo sotto il venduto previsto per il resto del mese.
               </p>
             ) : (
               <ul className="mt-4 space-y-3">
                 {lowStockProducts.map((product) => (
                   <li key={product.id} className="rounded-2xl border border-rose-200 bg-white/90 p-4 text-sm text-rose-900">
+                    {product.alertThreshold !== null ? (
+                      <>
+                        <div className="mb-2 text-xs font-medium uppercase tracking-[0.12em] text-rose-700">
+                          Venduto previsto mensile: {product.alertThreshold}
+                        </div>
+                        <div className="mb-2 text-xs text-rose-700">
+                          Previsto da vendere nel resto del mese: {Math.ceil(getExpectedMonthlyRemainingSales(product.alertThreshold))}
+                        </div>
+                      </>
+                    ) : null}
                     <div className="flex items-center justify-between gap-3">
                       <span className="font-semibold">{product.name}</span>
                       <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-800">
-                        {product.stock} / soglia {product.alertThreshold}
+                        Stock {product.stock}
                       </span>
                     </div>
                     <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-rose-700">
