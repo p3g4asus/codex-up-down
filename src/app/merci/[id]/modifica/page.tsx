@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { FeedbackBanner } from "@/components/feedback-banner";
 import { PageShell } from "@/components/page-shell";
 import { ProductForm } from "@/components/product-form";
+import { withBasePath } from "@/lib/base-path";
 import { containerLabels } from "@/lib/containers";
 import { prisma } from "@/lib/prisma";
 import { unitLabels } from "@/lib/units";
@@ -22,7 +23,7 @@ type PageProps = {
 export default async function EditProductPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const feedback = searchParams ? await searchParams : undefined;
-  const returnTo = feedback?.returnTo?.startsWith("/") ? feedback.returnTo : "/merci";
+  const returnTo = feedback?.returnTo?.startsWith("/") ? withBasePath(feedback.returnTo) : withBasePath("/merci");
   const productId = Number(id);
 
   if (!Number.isInteger(productId) || productId <= 0) {
