@@ -12,6 +12,7 @@ import {
 
 type ArticleOption = {
   id: number;
+  code: string;
   name: string;
 };
 
@@ -42,6 +43,7 @@ export function ArticlesFiltersForm({ filters, products, pageSize, sort, dir }: 
     : null;
 
   const exportQuery = buildArticlesSearchParams({
+    q: filters?.q,
     productId: filters?.productId,
     date: filters?.date,
     sort,
@@ -65,6 +67,7 @@ export function ArticlesFiltersForm({ filters, products, pageSize, sort, dir }: 
     const formData = new FormData(event.currentTarget);
     const params = new URLSearchParams();
 
+    setParam(params, "q", (formData.get("q") as string | null)?.trim() ?? "");
     setParam(params, "productId", formData.get("productId") as string | null);
     setParam(params, "date", formData.get("date") as string | null);
     setParam(params, "pageSize", formData.get("pageSize") as string | null);
@@ -81,7 +84,21 @@ export function ArticlesFiltersForm({ filters, products, pageSize, sort, dir }: 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid flex-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <form onSubmit={handleSubmit} className="grid flex-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="space-y-2">
+        <label htmlFor="q" className="text-sm font-semibold text-slate-900">
+          Ricerca
+        </label>
+        <input
+          id="q"
+          name="q"
+          type="search"
+          defaultValue={filters?.q ?? ""}
+          placeholder="Nome o descrizione articolo"
+          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
+        />
+      </div>
+
       <div className="space-y-2">
         <label htmlFor="productId" className="text-sm font-semibold text-slate-900">
           Articolo
@@ -95,7 +112,7 @@ export function ArticlesFiltersForm({ filters, products, pageSize, sort, dir }: 
           <option value="">Tutti gli articoli</option>
           {products.map((product) => (
             <option key={product.id} value={String(product.id)}>
-              {product.name}
+              {product.code} - {product.name}
             </option>
           ))}
         </select>
@@ -135,7 +152,7 @@ export function ArticlesFiltersForm({ filters, products, pageSize, sort, dir }: 
         </select>
       </div>
 
-      <div className="flex flex-wrap gap-3 md:col-span-2 xl:col-span-3">
+      <div className="flex flex-wrap gap-3 md:col-span-2 xl:col-span-4">
         <button
           type="submit"
           disabled={isSubmitting}

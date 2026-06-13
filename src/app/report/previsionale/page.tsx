@@ -5,6 +5,7 @@ import { PageShell } from "@/components/page-shell";
 import { PrintButton } from "@/components/print-button";
 import {
   buildForecastSearchParams,
+  buildForecastProductWhere,
   buildForecastRows,
   formatSignedPercent,
   getForecastPage,
@@ -64,7 +65,16 @@ export default async function ForecastReportPage({ searchParams }: PageProps) {
 
   const [products, monthlyUnloadedToReference, movementsAfterReferenceByType, earliestMovement] = await Promise.all([
     prisma.product.findMany({
+      where: buildForecastProductWhere(filters),
       orderBy: { name: "asc" },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        unit: true,
+        stock: true,
+        alertThreshold: true,
+      },
     }),
     prisma.movement.groupBy({
       by: ["productId"],
@@ -113,6 +123,27 @@ export default async function ForecastReportPage({ searchParams }: PageProps) {
   const unloadedToReferenceMap = new Map(monthlyUnloadedToReference.map((row) => [row.productId, row._sum.quantity ?? 0]));
   const loadsAfterReferenceMap = new Map<number, number>();
   const unloadsAfterReferenceMap = new Map<number, number>();
+  const selectedProductName = filters?.productId
+    ? products.find((product) => product.id === Number(filters.productId))?.name ?? null
+    : null;
+  const activeSearchLabel = filters?.q?.trim() ? `Ricerca: ${filters.q.trim()}` : null;
+  const selectedMonthLabel = filters?.month
+    ? monthLabelFormatter.format(monthContext.monthStart)
+    : "Mese: corrente";
+  const selectedCoverageLabel =
+    filters?.coverage === "covered"
+      ? "Copertura: sufficiente"
+      : filters?.coverage === "uncovered"
+        ? "Copertura: insufficiente"
+        : null;
+  const selectedTrendLabel =
+    filters?.trend === "above"
+      ? "Trend: più vendite del previsto"
+      : filters?.trend === "not-above"
+        ? "Trend: non più vendite del previsto"
+        : null;
+  const activePageSizeLabel = pageSize !== 12 ? `Righe per pagina: ${pageSize}` : null;
+  const hasActiveFilters = Boolean(filters?.q?.trim() || filters?.month || filters?.productId || filters?.coverage || filters?.trend);
 
   for (const row of movementsAfterReferenceByType) {
     if (row.type === MovementType.LOAD) {
@@ -156,6 +187,8 @@ export default async function ForecastReportPage({ searchParams }: PageProps) {
   reportRows = sortForecastRows(reportRows, sort, dir);
 
   const totalCount = reportRows.length;
+  const coveredCount = reportRows.filter((row) => row.isCoverageSufficient === true).length;
+  const uncoveredCount = reportRows.filter((row) => row.isCoverageSufficient === false).length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const pagedRows = reportRows.slice((safeCurrentPage - 1) * pageSize, safeCurrentPage * pageSize);
@@ -188,13 +221,13 @@ export default async function ForecastReportPage({ searchParams }: PageProps) {
   return (
     <PageShell
       title="Report previsionale"
-      description="Confronta vendite previste e vendite reali del mese selezionato, stimando esaurimento scorte e copertura a fine mese."
+      description="Consulta il report previsionale, applica i filtri e confronta vendite previste, vendite reali e copertura a fine mese."
     >
       <section className="rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur print:hidden">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <ForecastFiltersForm
             filters={filters}
-            products={products.map((product) => ({ id: product.id, name: product.name }))}
+            products={products.map((product) => ({ id: product.id, code: product.code ?? "", name: product.name }))}
             monthOptions={monthOptions}
             pageSize={pageSize}
             sort={sort}
@@ -206,11 +239,60 @@ export default async function ForecastReportPage({ searchParams }: PageProps) {
 
       <section className="mt-6 rounded-[2rem] border border-white/70 bg-[var(--card)] shadow-panel backdrop-blur print:rounded-none print:border-0 print:bg-white print:shadow-none">
         <div className="border-b border-slate-200/70 px-6 py-5 print:px-0">
-          <h2 className="text-xl font-semibold text-slate-950">Tabella previsionale</h2>
+          <h2 className="text-xl font-semibold text-slate-950">Report previsionale</h2>
           <p className="mt-1 text-sm text-slate-600">
             Mese di riferimento: {monthContext.monthLabel}. Data attuale di calcolo: {dateFormatter.format(monthContext.referenceDate)}.
           </p>
+          {hasActiveFilters ? (
+            <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold">
+                {activeSearchLabel ? (
+                  <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-amber-800">
+                    {activeSearchLabel}
+                  </span>
+                ) : null}
+                <span className="inline-flex rounded-full bg-sky-100 px-3 py-1 text-sky-800">{selectedMonthLabel}</span>
+                {selectedProductName ? (
+                  <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-amber-800">
+                    Articolo: {selectedProductName}
+                  </span>
+                ) : null}
+                {selectedCoverageLabel ? (
+                  <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-emerald-800">
+                    {selectedCoverageLabel}
+                  </span>
+                ) : null}
+                {selectedTrendLabel ? (
+                  <span className="inline-flex rounded-full bg-violet-100 px-3 py-1 text-violet-800">
+                    {selectedTrendLabel}
+                  </span>
+                ) : null}
+                {activePageSizeLabel ? (
+                  <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-slate-700">
+                    {activePageSizeLabel}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
         </div>
+
+        {totalCount > 0 ? (
+          <div className="grid gap-4 px-6 py-6 md:grid-cols-3 print:px-0">
+            <article className="rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur print:shadow-none print:border-slate-200">
+              <p className="text-sm uppercase tracking-[0.22em] text-slate-500">Articoli trovati</p>
+              <p className="mt-3 text-4xl font-semibold text-slate-950">{totalCount}</p>
+            </article>
+            <article className="rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur print:shadow-none print:border-slate-200">
+              <p className="text-sm uppercase tracking-[0.22em] text-slate-500">Copertura sufficiente</p>
+              <p className="mt-3 text-4xl font-semibold text-emerald-700">{coveredCount}</p>
+            </article>
+            <article className="rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur print:shadow-none print:border-slate-200">
+              <p className="text-sm uppercase tracking-[0.22em] text-slate-500">Copertura insufficiente</p>
+              <p className="mt-3 text-4xl font-semibold text-amber-700">{uncoveredCount}</p>
+            </article>
+          </div>
+        ) : null}
 
         {pagedRows.length === 0 ? (
           <div className="px-6 py-16 text-center text-sm text-slate-600 print:px-0">
@@ -221,7 +303,8 @@ export default async function ForecastReportPage({ searchParams }: PageProps) {
             <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
               <thead className="bg-white/60 text-slate-500">
                 <tr>
-                  <th className="px-4 py-3 font-medium">
+                    <th className="px-4 py-3 font-medium">Codice articolo</th>
+                    <th className="px-4 py-3 font-medium">
                     <a href={buildSortHref("product")} className="hover:text-slate-700">
                       Articolo{getSortIndicator("product")}
                     </a>
@@ -236,6 +319,7 @@ export default async function ForecastReportPage({ searchParams }: PageProps) {
                       Giacenza attuale{getSortIndicator("currentStock")}
                     </a>
                   </th>
+                  <th className="px-4 py-3 font-medium">Stock necessario per coprire le vendite mensili</th>
                   <th className="px-4 py-3 font-medium">
                     <a href={buildSortHref("unloadedToReference")} className="hover:text-slate-700">
                       Vendita effettiva{getSortIndicator("unloadedToReference")}
@@ -280,12 +364,37 @@ export default async function ForecastReportPage({ searchParams }: PageProps) {
                     row.stockNeededToMonthEnd,
                     row.currentStockAtReference,
                   );
+                  const stockNeededForMonthlySales = row.stockNeededForMonthlySales;
+                  const isOverMonthlyForecast =
+                    stockNeededForMonthlySales !== null && stockNeededForMonthlySales < 0;
+                  const stockNeededForMonthlySalesTone =
+                    stockNeededForMonthlySales !== null && stockNeededForMonthlySales >= 0
+                      ? stockNeededForMonthlySales <= row.currentStockAtReference
+                        ? "text-emerald-700"
+                        : "text-rose-700"
+                      : "text-slate-700";
 
                   return (
                     <tr key={row.productId} className="text-slate-700">
+                      <td className="px-4 py-3 font-semibold text-slate-900">{row.productCode}</td>
                       <td className="px-4 py-3 font-semibold text-slate-900">{row.productName}</td>
                       <td className="px-4 py-3">{row.monthlyForecast !== null ? Math.round(row.monthlyForecast) : "-"}</td>
                       <td className="px-4 py-3">{row.currentStockAtReference} {unitLabels[row.unit]}</td>
+                      <td className="px-4 py-3">
+                        {stockNeededForMonthlySales === null ? (
+                          <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                            Dati non sufficienti
+                          </span>
+                        ) : isOverMonthlyForecast ? (
+                          <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                            Vendita superiore al previsto
+                          </span>
+                        ) : (
+                          <span className={`font-semibold ${stockNeededForMonthlySalesTone}`}>
+                            {Math.round(stockNeededForMonthlySales)}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 font-semibold">
                         <span className="text-slate-900">{Math.round(row.unloadedToReference)}</span>
                         <span className={`ml-1 ${deltaTone}`}>

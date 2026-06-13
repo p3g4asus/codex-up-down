@@ -1,6 +1,6 @@
 {
   "name": "codex-up-down",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "scripts": {
     "dev": "NEXT_DIST_DIR=.next-dev next dev -H 0.0.0.0 -p 3000",

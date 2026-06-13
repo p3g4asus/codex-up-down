@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { UnitOfMeasure } from "@prisma/client";
+import { UnitOfMeasure, type ContainerType } from "@prisma/client";
 
 import { withBasePath } from "@/lib/base-path";
 import { emitClientFeedback } from "@/lib/client-feedback";
+import { containerLabels, containerOptions } from "@/lib/containers";
 import { unitLabels, unitOptions } from "@/lib/units";
 
 type ProductFormValues = {
@@ -15,6 +16,7 @@ type ProductFormValues = {
   plu?: number;
   description?: string | null;
   unit?: UnitOfMeasure;
+  container?: ContainerType;
   alertThreshold?: number | null;
 };
 
@@ -26,7 +28,7 @@ type ProductFormProps = {
 
 export function ProductForm({
   lockUnit = false,
-  submitLabel = "Salva merce",
+  submitLabel = "Salva articolo",
   values,
 }: ProductFormProps) {
   const router = useRouter();
@@ -77,7 +79,7 @@ export function ProductForm({
       {values?.id ? <input type="hidden" name="productId" value={values.id} /> : null}
       <div className="space-y-2">
         <label htmlFor="name" className="text-sm font-semibold text-slate-900">
-          Nome merce
+          Nome articolo
         </label>
         <input
           id="name"
@@ -96,7 +98,7 @@ export function ProductForm({
           id="description"
           name="description"
           rows={5}
-          placeholder="Dettagli utili per identificare la merce (opzionale)"
+          placeholder="Dettagli utili per identificare l'articolo (opzionale)"
           defaultValue={values?.description ?? ""}
           className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
         />
@@ -104,15 +106,16 @@ export function ProductForm({
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <label htmlFor="code" className="text-sm font-semibold text-slate-900">
-            Codice alfanumerico
+            Codice articolo
           </label>
           <input
             id="code"
             name="code"
             required
-            pattern="[A-Za-z0-9]+"
-            title="Usa solo lettere e numeri"
-            placeholder="Es. AX45B9"
+            inputMode="numeric"
+            pattern="[0-9]+"
+            title="Usa solo numeri"
+            placeholder="Es. 123456"
             defaultValue={values?.code ?? ""}
             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
           />
@@ -135,8 +138,26 @@ export function ProductForm({
         </div>
       </div>
       <div className="space-y-2">
+        <label htmlFor="container" className="text-sm font-semibold text-slate-900">
+          Contenitore
+        </label>
+        <select
+          id="container"
+          name="container"
+          required
+          defaultValue={values?.container ?? "CASSETTA_BIANCA"}
+          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
+        >
+          {containerOptions.map((container) => (
+            <option key={container} value={container}>
+              {containerLabels[container]}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="space-y-2">
         <label htmlFor="unit" className="text-sm font-semibold text-slate-900">
-          Unita di misura
+          Unità di misura
         </label>
         {lockUnit && values?.unit ? <input type="hidden" name="unit" value={values.unit} /> : null}
         <select
@@ -155,7 +176,7 @@ export function ProductForm({
         </select>
         {lockUnit ? (
           <p className="text-xs leading-5 text-slate-500">
-            Unita bloccata: esistono movimenti registrati per questa merce.
+            Unità bloccata: esistono movimenti registrati per questo articolo.
           </p>
         ) : null}
       </div>
@@ -174,7 +195,7 @@ export function ProductForm({
           className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
         />
         <p className="text-xs leading-5 text-slate-500">
-          Se impostato, l&apos;alert scatta quando la giacenza e inferiore al venduto previsto per il resto del mese,
+          Se impostato, l&apos;alert scatta quando la giacenza è inferiore al venduto previsto per il resto del mese,
           assumendo una vendita uniforme giorno per giorno.
         </p>
       </div>

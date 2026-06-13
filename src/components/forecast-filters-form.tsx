@@ -12,6 +12,7 @@ import {
 
 type ForecastProductOption = {
   id: number;
+  code: string;
   name: string;
 };
 
@@ -38,6 +39,7 @@ export function ForecastFiltersForm({ filters, products, monthOptions, pageSize,
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const queryString = buildForecastSearchParams({
+    q: filters?.q,
     month: filters?.month,
     productId: filters?.productId,
     coverage: filters?.coverage,
@@ -62,6 +64,7 @@ export function ForecastFiltersForm({ filters, products, monthOptions, pageSize,
 
     const formData = new FormData(event.currentTarget);
     const params = new URLSearchParams();
+    setParam(params, "q", (formData.get("q") as string | null)?.trim() ?? "");
     setParam(params, "month", formData.get("month") as string | null);
     setParam(params, "productId", formData.get("productId") as string | null);
     setParam(params, "coverage", formData.get("coverage") as string | null);
@@ -80,7 +83,21 @@ export function ForecastFiltersForm({ filters, products, monthOptions, pageSize,
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid flex-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+    <form onSubmit={handleSubmit} className="grid flex-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+      <div className="space-y-2">
+        <label htmlFor="q" className="text-sm font-semibold text-slate-900">
+          Ricerca
+        </label>
+        <input
+          id="q"
+          name="q"
+          type="search"
+          defaultValue={filters?.q ?? ""}
+          placeholder="Nome o descrizione articolo"
+          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
+        />
+      </div>
+
       <div className="space-y-2">
         <label htmlFor="month" className="text-sm font-semibold text-slate-900">
           Mese
@@ -113,7 +130,7 @@ export function ForecastFiltersForm({ filters, products, monthOptions, pageSize,
           <option value="">Tutti gli articoli</option>
           {products.map((product) => (
             <option key={product.id} value={String(product.id)}>
-              {product.name}
+              {product.code} - {product.name}
             </option>
           ))}
         </select>
@@ -146,8 +163,8 @@ export function ForecastFiltersForm({ filters, products, monthOptions, pageSize,
           className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-accent"
         >
           <option value="">Tutti</option>
-          <option value="above">Piu vendite del previsto</option>
-          <option value="not-above">Non piu vendite del previsto</option>
+          <option value="above">Più vendite del previsto</option>
+          <option value="not-above">Non più vendite del previsto</option>
         </select>
       </div>
 
@@ -169,7 +186,7 @@ export function ForecastFiltersForm({ filters, products, monthOptions, pageSize,
         </select>
       </div>
 
-      <div className="flex flex-wrap gap-3 md:col-span-2 xl:col-span-5">
+      <div className="flex flex-wrap gap-3 md:col-span-2 xl:col-span-6">
         <button
           type="submit"
           disabled={isSubmitting}

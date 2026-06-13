@@ -20,8 +20,8 @@ export default async function NewProductPage({ searchParams }: PageProps) {
 
   return (
     <PageShell
-      title="Nuova merce"
-      description="Crea una nuova voce nel database merci con nome, unita di misura e soglia opzionale. La giacenza iniziale parte da zero e verra aggiornata dalle schermate di carico e scarico."
+      title="Nuovo articolo"
+      description="Crea una nuova voce nel database articoli con nome, unità di misura e soglia opzionale. La giacenza iniziale parte da zero e verrà aggiornata dalle schermate di carico e scarico."
     >
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <section className="space-y-4">
@@ -30,10 +30,10 @@ export default async function NewProductPage({ searchParams }: PageProps) {
         </section>
 
         <section className="rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur">
-          <h2 className="text-xl font-semibold text-slate-950">Ultime merci inserite</h2>
+          <h2 className="text-xl font-semibold text-slate-950">Ultimi articoli inseriti</h2>
           {products.length === 0 ? (
             <p className="mt-4 text-sm leading-6 text-slate-600">
-              Nessuna merce registrata. Compila il modulo per popolare il database.
+              Nessun articolo registrato. Compila il modulo per popolare il database.
             </p>
           ) : (
             <ul className="mt-4 space-y-3">
@@ -47,7 +47,7 @@ export default async function NewProductPage({ searchParams }: PageProps) {
                   </div>
                   <p className="mt-2 text-sm leading-6 text-slate-600">{product.description || "-"}</p>
                   <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
-                    Unita: {unitLabels[product.unit]}
+                    Unità: {unitLabels[product.unit]}
                   </p>
                 </li>
               ))}

@@ -9,10 +9,12 @@ export type MonthContext = {
 
 export type ForecastRow = {
   productId: number;
+  productCode: string;
   productName: string;
   unit: UnitOfMeasure;
   monthlyForecast: number | null;
   currentStockAtReference: number;
+  stockNeededForMonthlySales: number | null;
   expectedSoldToDate: number | null;
   unloadedToReference: number;
   deltaPercent: number | null;
@@ -22,6 +24,7 @@ export type ForecastRow = {
 };
 
 export type ForecastFilterParams = {
+  q?: string;
   month?: string;
   productId?: string;
   coverage?: string;
@@ -79,6 +82,34 @@ export function resolveMonthContext(monthFilter?: string, now: Date = new Date()
   };
 }
 
+function normalizeQuery(value?: string) {
+  const normalized = value?.trim();
+  return normalized ? normalized : undefined;
+}
+
+export function buildForecastProductWhere(filters?: ForecastFilterParams) {
+  const query = normalizeQuery(filters?.q);
+
+  return {
+    ...(query
+      ? {
+          OR: [
+            {
+              name: {
+                contains: query,
+              },
+            },
+            {
+              description: {
+                contains: query,
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+}
+
 function getDaysInMonth(context: MonthContext) {
   return context.monthEnd.getDate();
 }
@@ -100,7 +131,7 @@ function getRemainingDaysIncludingToday(context: MonthContext) {
 }
 
 export function buildForecastRows(
-  products: Array<Pick<Product, "id" | "name" | "unit" | "stock" | "alertThreshold">>,
+  products: Array<Pick<Product, "id" | "code" | "name" | "unit" | "stock" | "alertThreshold">>,
   unloadedToReferenceByProduct: Map<number, number>,
   loadsAfterReferenceByProduct: Map<number, number>,
   unloadsAfterReferenceByProduct: Map<number, number>,
@@ -117,6 +148,8 @@ export function buildForecastRows(
     const currentStockAtReference = product.stock - loadsAfterReference + unloadsAfterReference;
 
     const monthlyForecast = product.alertThreshold;
+    const stockNeededForMonthlySales =
+      monthlyForecast === null ? null : monthlyForecast - unloadedToReference;
     const expectedSoldToDate =
       monthlyForecast === null ? null : (monthlyForecast * elapsedDays) / daysInMonth;
     const deltaPercent =
@@ -148,10 +181,12 @@ export function buildForecastRows(
 
     return {
       productId: product.id,
+      productCode: product.code ?? "",
       productName: product.name,
       unit: product.unit,
       monthlyForecast,
       currentStockAtReference,
+      stockNeededForMonthlySales,
       expectedSoldToDate,
       unloadedToReference,
       deltaPercent,

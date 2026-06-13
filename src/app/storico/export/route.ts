@@ -84,8 +84,9 @@ export async function GET(request: Request) {
     escapeCsv(unitLabels[row.unit]),
   ]);
 
-  const header = ["Data", "Merce", "Tipo", "Quantita", "Unita", "Nota"];
+  const header = ["Codice articolo", "Data", "Merce", "Tipo", "Quantita", "Unita", "Nota"];
   const rows = movements.map((movement) => [
+    escapeCsv(movement.product.code ?? ""),
     escapeCsv(csvDateFormatter.format(movement.createdAt)),
     escapeCsv(movement.product.name),
     escapeCsv(movementTypeLabels[movement.type]),

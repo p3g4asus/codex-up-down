@@ -4,7 +4,7 @@ type PrintButtonProps = {
   label?: string;
 };
 
-export function PrintButton({ label = "Stampa storico" }: PrintButtonProps) {
+export function PrintButton({ label = "Stampa report" }: PrintButtonProps) {
   return (
     <button
       type="button"

@@ -6,12 +6,12 @@ export default function ReportHubPage() {
   return (
     <PageShell
       title="Report"
-      description="Accedi ai report operativi: Storico movimenti, Previsionale vendite/scorte e Articoli."
+      description="Accedi ai report operativi disponibili: Storico, Previsionale e Articoli."
     >
       <section className="rounded-[2rem] border border-white/70 bg-[var(--card)] p-8 shadow-panel backdrop-blur">
         <h2 className="text-2xl font-semibold text-slate-950">Seleziona il report</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Scegli se consultare lo storico completo dei movimenti, il report previsionale oppure il report articoli.
+          Scegli il report da consultare in base all’analisi che vuoi fare.
         </p>
         <div className="mt-6 flex flex-wrap gap-4">
           <Link

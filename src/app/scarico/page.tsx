@@ -22,7 +22,7 @@ export default async function UnloadPage({ searchParams }: PageProps) {
   return (
     <PageShell
       title="Scarico merci"
-      description="Registra l'uscita di merce dal magazzino. Il sistema blocca automaticamente gli scarichi superiori alla disponibilita corrente."
+      description="Registra l'uscita di un articolo dal magazzino. Il sistema blocca automaticamente gli scarichi superiori alla disponibilità corrente."
     >
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <section className="space-y-4">
@@ -31,13 +31,13 @@ export default async function UnloadPage({ searchParams }: PageProps) {
         </section>
 
         <section className="rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur">
-          <h2 className="text-xl font-semibold text-slate-950">Controllo disponibilita</h2>
+          <h2 className="text-xl font-semibold text-slate-950">Controllo disponibilità</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Puoi scaricare solo merci gia presenti e con giacenza sufficiente.
+            Puoi scaricare solo articoli già presenti e con giacenza sufficiente.
           </p>
           {products.length === 0 ? (
             <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white/70 p-5 text-sm text-slate-600">
-              Nessuna merce disponibile. Vai a <Link href="/merci/nuova" className="font-semibold text-accent">Nuova merce</Link>.
+              Nessun articolo disponibile. Vai a <Link href="/merci/nuova" className="font-semibold text-accent">Nuovo articolo</Link>.
             </div>
           ) : (
             <ul className="mt-6 space-y-3">
@@ -51,7 +51,7 @@ export default async function UnloadPage({ searchParams }: PageProps) {
                   </div>
                   <p className="mt-2 text-sm leading-6 text-slate-600">{product.description || "-"}</p>
                   <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
-                    Unita: {unitLabels[product.unit]}
+                    Unità: {unitLabels[product.unit]}
                   </p>
                 </li>
               ))}

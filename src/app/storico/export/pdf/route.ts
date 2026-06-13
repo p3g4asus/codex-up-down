@@ -44,12 +44,13 @@ function estimateWrappedHeight(text: string, font: PDFFont, fontSize: number, ma
 function drawTableHeader(page: PDFPage, fonts: { bold: PDFFont }, yTop: number) {
   const y = topY(page.getHeight(), yTop, 10);
 
-  page.drawText("Data", { x: MARGIN, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
-  page.drawText("Merce", { x: 120, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
-  page.drawText("Tipo", { x: 275, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
-  page.drawText("Qta", { x: 330, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
-  page.drawText("Unita", { x: 380, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
-  page.drawText("Nota", { x: 450, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
+  page.drawText("Codice", { x: MARGIN, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
+  page.drawText("Data", { x: 95, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
+  page.drawText("Merce", { x: 175, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
+  page.drawText("Tipo", { x: 295, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
+  page.drawText("Qta", { x: 350, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
+  page.drawText("Unita", { x: 400, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
+  page.drawText("Nota", { x: 465, y, size: 10, font: fonts.bold, color: toPdfColor("#334155") });
 
   page.drawLine({
     start: { x: MARGIN, y: page.getHeight() - yTop - 16 },
@@ -332,12 +333,13 @@ export async function GET(request: Request) {
     }
 
     const rowY = topY(page.getHeight(), yTop, 9);
-    page.drawText(dateFormatter.format(movement.createdAt), { x: 40, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 72 });
-    page.drawText(movement.product.name, { x: 120, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 145, lineHeight: 11 });
-    page.drawText(movementTypeLabels[movement.type], { x: 275, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 60 });
-    page.drawText(String(movement.quantity), { x: 330, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 40 });
-    page.drawText(unitLabels[movement.product.unit], { x: 380, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 65 });
-    page.drawText(note, { x: 450, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 105, lineHeight: 11 });
+    page.drawText(movement.product.code ?? "-", { x: 40, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 45 });
+    page.drawText(dateFormatter.format(movement.createdAt), { x: 95, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 72 });
+    page.drawText(movement.product.name, { x: 175, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 115, lineHeight: 11 });
+    page.drawText(movementTypeLabels[movement.type], { x: 295, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 50 });
+    page.drawText(String(movement.quantity), { x: 350, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 45 });
+    page.drawText(unitLabels[movement.product.unit], { x: 400, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 60 });
+    page.drawText(note, { x: 465, y: rowY, size: 9, font: helvetica, color: toPdfColor("#111827"), maxWidth: 105, lineHeight: 11 });
 
     page.drawLine({
       start: { x: MARGIN, y: page.getHeight() - yTop - rowHeight - 4 },

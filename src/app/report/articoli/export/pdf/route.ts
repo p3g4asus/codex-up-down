@@ -2,12 +2,14 @@ import { MovementType } from "@prisma/client";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 
 import {
+  buildArticlesWhere,
   buildArticlesRows,
   getArticlesSort,
   getArticlesSortDir,
   resolveArticlesReferenceDate,
   sortArticlesRows,
 } from "@/lib/articoli-report";
+import { containerLabels } from "@/lib/containers";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -17,9 +19,12 @@ const PAGE_HEIGHT = 841.89;
 const MARGIN = 40;
 const BOTTOM_MARGIN = 62;
 const columns = [
-  { label: "Articolo", x: MARGIN, w: 250 },
-  { label: "Giacenza", x: 300, w: 90 },
-  { label: "Data ultimo carico", x: 400, w: 155 },
+  { label: "Codice articolo", x: MARGIN, w: 70 },
+  { label: "Nome articolo", x: 112, w: 130 },
+  { label: "Vendita mensile prevista", x: 245, w: 70 },
+  { label: "Contenitore", x: 320, w: 85 },
+  { label: "Data ultimo carico", x: 410, w: 80 },
+  { label: "Giacenza attuale", x: 495, w: 80 },
 ];
 
 const dateFormatter = new Intl.DateTimeFormat("it-IT", {
@@ -113,19 +118,28 @@ function drawPageHeader(options: {
     color: toPdfColor("#475569"),
   });
 
-  let y = PAGE_HEIGHT - 86;
+  const headerFontSize = 9;
+  const headerLineHeight = 10;
+  const headerTop = PAGE_HEIGHT - 86;
+  const wrappedHeaders = columns.map((column) => ({
+    ...column,
+    lines: wrapTextByWidth(column.label, column.w, (value) => bold.widthOfTextAtSize(value, headerFontSize)),
+  }));
+  const headerHeight = Math.max(...wrappedHeaders.map((column) => column.lines.length)) * headerLineHeight;
 
-  for (const column of columns) {
-    page.drawText(column.label, {
-      x: column.x,
-      y,
-      size: 10,
-      font: bold,
-      color: toPdfColor("#334155"),
+  for (const column of wrappedHeaders) {
+    column.lines.forEach((line, index) => {
+      page.drawText(line, {
+        x: column.x,
+        y: headerTop - index * headerLineHeight,
+        size: headerFontSize,
+        font: bold,
+        color: toPdfColor("#334155"),
+      });
     });
   }
 
-  y -= 8;
+  const y = headerTop - headerHeight - 4;
   page.drawLine({
     start: { x: MARGIN, y },
     end: { x: PAGE_WIDTH - MARGIN, y },
@@ -147,24 +161,17 @@ export async function GET(request: Request) {
 
   const referenceDate = resolveArticlesReferenceDate(filters.date);
 
-  const [products, movementsAfterReferenceByType, latestLoadsUntilReference] = await Promise.all([
+  const [products, latestLoadsUntilReference] = await Promise.all([
     prisma.product.findMany({
+      where: buildArticlesWhere(filters),
       orderBy: { name: "asc" },
       select: {
         id: true,
+        code: true,
         name: true,
         stock: true,
-      },
-    }),
-    prisma.movement.groupBy({
-      by: ["productId", "type"],
-      where: {
-        createdAt: {
-          gt: referenceDate,
-        },
-      },
-      _sum: {
-        quantity: true,
+        alertThreshold: true,
+        container: true,
       },
     }),
     prisma.movement.groupBy({
@@ -181,24 +188,11 @@ export async function GET(request: Request) {
     }),
   ]);
 
-  const loadsAfterReferenceMap = new Map<number, number>();
-  const unloadsAfterReferenceMap = new Map<number, number>();
-
-  for (const row of movementsAfterReferenceByType) {
-    if (row.type === MovementType.LOAD) {
-      loadsAfterReferenceMap.set(row.productId, row._sum.quantity ?? 0);
-    }
-
-    if (row.type === MovementType.UNLOAD) {
-      unloadsAfterReferenceMap.set(row.productId, row._sum.quantity ?? 0);
-    }
-  }
-
   const lastLoadAtByProduct = new Map<number, Date | null>(
     latestLoadsUntilReference.map((row) => [row.productId, row._max.createdAt ?? null]),
   );
 
-  let reportRows = buildArticlesRows(products, loadsAfterReferenceMap, unloadsAfterReferenceMap, lastLoadAtByProduct);
+  let reportRows = buildArticlesRows(products, lastLoadAtByProduct);
 
   const filterProductId = filters.productId ? Number(filters.productId) : NaN;
   if (Number.isInteger(filterProductId) && filterProductId > 0) {
@@ -234,21 +228,42 @@ export async function GET(request: Request) {
       {
         x: columns[0].x,
         width: columns[0].w,
-        text: row.productName,
+        text: row.productCode,
         font: regular,
         color: toPdfColor("#111827"),
       },
       {
         x: columns[1].x,
         width: columns[1].w,
-        text: String(row.stockAtReference),
+        text: row.productName,
         font: regular,
         color: toPdfColor("#111827"),
       },
       {
         x: columns[2].x,
         width: columns[2].w,
+        text: row.monthlyForecast ? String(row.monthlyForecast) : "-",
+        font: regular,
+        color: toPdfColor("#111827"),
+      },
+      {
+        x: columns[3].x,
+        width: columns[3].w,
+        text: containerLabels[row.container],
+        font: regular,
+        color: toPdfColor("#111827"),
+      },
+      {
+        x: columns[4].x,
+        width: columns[4].w,
         text: row.lastLoadAt ? dateFormatter.format(row.lastLoadAt) : "Nessun carico",
+        font: regular,
+        color: toPdfColor("#111827"),
+      },
+      {
+        x: columns[5].x,
+        width: columns[5].w,
+        text: String(row.currentStock),
         font: regular,
         color: toPdfColor("#111827"),
       },

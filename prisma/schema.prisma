@@ -8,17 +8,18 @@ datasource db {
 }
 
 model Product {
-  id          Int        @id @default(autoincrement())
-  name        String     @unique
-  code        String?    @unique
-  plu         Int?       @unique
-  description String?
-  unit        UnitOfMeasure @default(CONFEZIONE)
+  id             Int           @id @default(autoincrement())
+  name           String        @unique
+  code           String?       @unique
+  plu            Int?          @unique
+  description    String?
+  unit           UnitOfMeasure @default(CONFEZIONE)
+  container      ContainerType @default(CASSETTA_BIANCA)
   alertThreshold Int?
-  stock       Int        @default(0)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  movements   Movement[]
+  stock          Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  movements      Movement[]
 }
 
 model Movement {
@@ -51,4 +52,13 @@ enum UnitOfMeasure {
   GRAMMI
   ETTI
   KG
+}
+
+enum ContainerType {
+  CASSETTA_BIANCA
+  GASTRONORM_STD
+  MEZZA_GASTRONORM
+  GASTRONORM_ALTA
+  SOTTOVUOTO
+  ALTRO
 }

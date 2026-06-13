@@ -2,6 +2,7 @@ import { MovementType } from "@prisma/client";
 import { PDFFont, PDFDocument, PDFPage, StandardFonts, rgb } from "pdf-lib";
 
 import {
+  buildForecastProductWhere,
   buildForecastRows,
   formatSignedPercent,
   getForecastSort,
@@ -19,13 +20,15 @@ const PAGE_HEIGHT = 595.28;
 const MARGIN = 28;
 const BOTTOM_MARGIN = 45;
 const columns = [
-  { label: "Articolo", x: MARGIN, w: 160 },
-  { label: "Previsto mese", x: 190, w: 70 },
-  { label: "Giacenza", x: 265, w: 62 },
-  { label: "Vendita eff.", x: 330, w: 85 },
-  { label: "Esaurimento", x: 420, w: 95 },
-  { label: "Stock mese", x: 520, w: 110 },
-  { label: "Esito", x: 635, w: 170 },
+  { label: "Codice", x: MARGIN, w: 60 },
+  { label: "Articolo", x: 92, w: 118 },
+  { label: "Previsto mese", x: 214, w: 56 },
+  { label: "Giacenza", x: 274, w: 52 },
+  { label: "Stock copertura", x: 330, w: 84 },
+  { label: "Vendita eff.", x: 418, w: 72 },
+  { label: "Esaurimento", x: 494, w: 82 },
+  { label: "Stock mese", x: 580, w: 86 },
+  { label: "Esito", x: 670, w: 138 },
 ];
 
 function toPdfColor(hex: string) {
@@ -146,6 +149,7 @@ function wrapTextByWidth(text: string, maxWidth: number, measureText: (value: st
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const filters = {
+    q: searchParams.get("q") ?? undefined,
     month: searchParams.get("month") ?? undefined,
     productId: searchParams.get("productId") ?? undefined,
     coverage: searchParams.get("coverage") ?? undefined,
@@ -157,7 +161,18 @@ export async function GET(request: Request) {
   const monthContext = resolveMonthContext(filters.month);
 
   const [products, monthlyUnloadedToReference, movementsAfterReferenceByType] = await Promise.all([
-    prisma.product.findMany({ orderBy: { name: "asc" } }),
+    prisma.product.findMany({
+      where: buildForecastProductWhere(filters),
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        unit: true,
+        stock: true,
+        alertThreshold: true,
+      },
+    }),
     prisma.movement.groupBy({
       by: ["productId"],
       where: {
@@ -277,45 +292,73 @@ export async function GET(request: Request) {
             : toPdfColor("#111827");
 
     const missingUnits = getMissingUnitsToCoverMonth(row.stockNeededToMonthEnd, row.currentStockAtReference);
+    const stockNeededForMonthlySales = row.stockNeededForMonthlySales;
+    const stockNeededForMonthlySalesTone =
+      stockNeededForMonthlySales === null
+        ? toPdfColor("#475569")
+        : stockNeededForMonthlySales < 0
+          ? toPdfColor("#B45309")
+          : stockNeededForMonthlySales <= row.currentStockAtReference
+            ? toPdfColor("#166534")
+            : toPdfColor("#B91C1C");
     const rowCells = [
       {
         x: columns[0].x,
         width: columns[0].w,
-        text: row.productName,
+        text: row.productCode,
         font: regular,
         color: toPdfColor("#111827"),
       },
       {
         x: columns[1].x,
         width: columns[1].w,
-        text: String(row.monthlyForecast !== null ? Math.round(row.monthlyForecast) : "-"),
+        text: row.productName,
         font: regular,
         color: toPdfColor("#111827"),
       },
       {
         x: columns[2].x,
         width: columns[2].w,
-        text: String(row.currentStockAtReference),
+        text: String(row.monthlyForecast !== null ? Math.round(row.monthlyForecast) : "-"),
         font: regular,
         color: toPdfColor("#111827"),
       },
       {
         x: columns[3].x,
         width: columns[3].w,
+        text: String(row.currentStockAtReference),
+        font: regular,
+        color: toPdfColor("#111827"),
+      },
+      {
+        x: columns[4].x,
+        width: columns[4].w,
+        text:
+          stockNeededForMonthlySales === null
+            ? "Dati insuff."
+            : stockNeededForMonthlySales < 0
+              ? "Vendita superiore al previsto"
+              : String(Math.round(stockNeededForMonthlySales)),
+        font: bold,
+        color: stockNeededForMonthlySalesTone,
+      },
+      {
+        x: columns[5].x,
+        width: columns[5].w,
         text: `${Math.round(row.unloadedToReference)} (${formatSignedPercent(row.deltaPercent)})`,
         font: bold,
         color: deltaTone,
       },
       {
-        x: columns[4].x,
-        width: columns[4].w,
+        x: columns[6].x,
+        width: columns[6].w,
         text: row.depletionDate ? dateFormatter.format(row.depletionDate) : "Dati insuff.",
         font: bold,
         color: depletionTone,
       },
       {
-        x: columns[5].x,
-        width: columns[5].w,
+        x: columns[7].x,
+        width: columns[7].w,
         text:
           row.stockNeededToMonthEnd !== null
             ? `${Math.round(row.stockNeededToMonthEnd)}${
@@ -326,8 +369,8 @@ export async function GET(request: Request) {
         color: coverageTone,
       },
       {
-        x: columns[6].x,
-        width: columns[6].w,
+        x: columns[8].x,
+        width: columns[8].w,
         text:
           row.isCoverageSufficient === null
             ? "Dati non sufficienti"
@@ -342,7 +385,7 @@ export async function GET(request: Request) {
     const textSize = 8;
     const verticalPadding = 4;
     const rowGap = 8;
-    const verboseColumns = new Set([5, 6]);
+    const verboseColumns = new Set([4, 7, 8]);
 
     const getLineHeight = (size: number) => size + 3;
 

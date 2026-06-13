@@ -1,10 +1,11 @@
 "use server";
 
-import { MovementType, Prisma, UnitOfMeasure } from "@prisma/client";
+import { ContainerType, MovementType, Prisma, UnitOfMeasure } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
+import { isContainerType } from "@/lib/containers";
 import { isUnitOfMeasure, unitLabels } from "@/lib/units";
 
 function getStringValue(formData: FormData, key: string) {
@@ -75,6 +76,26 @@ function parseUnit(value: string, redirectPath: string) {
   return value as UnitOfMeasure;
 }
 
+function parseContainer(value: string, redirectPath: string) {
+  if (!isContainerType(value)) {
+    redirectWithMessage(redirectPath, "error", "Seleziona un contenitore valido.");
+  }
+
+  return value as ContainerType;
+}
+
+function parseProductCode(value: string, redirectPath: string) {
+  if (!value) {
+    redirectWithMessage(redirectPath, "error", "Il codice articolo e obbligatorio.");
+  }
+
+  if (!/^[0-9]+$/.test(value)) {
+    redirectWithMessage(redirectPath, "error", "Il codice articolo deve contenere solo numeri.");
+  }
+
+  return value;
+}
+
 function refreshInventoryViews() {
   revalidatePath("/");
   revalidatePath("/storico");
@@ -86,14 +107,17 @@ function refreshInventoryViews() {
 
 function validateProductPayload(
   name: string,
+  code: string,
+  plu: number | null,
   unit: UnitOfMeasure,
+  container: ContainerType,
   redirectPath: string,
 ) {
-  if (!name || !unit) {
+  if (!name || !code || !plu || !unit || !container) {
     redirectWithMessage(
       redirectPath,
       "error",
-      "Nome e unita di misura sono obbligatori.",
+      "Nome, codice articolo, PLU, contenitore e unita di misura sono obbligatori.",
     );
   }
 }
@@ -130,7 +154,14 @@ function ensureMovementCanBeChanged(
 
 export async function createProduct(formData: FormData) {
   const name = getStringValue(formData, "name");
+  const code = parseProductCode(getStringValue(formData, "code"), "/merci/nuova");
+  const plu = parsePositiveNumberOrRedirect(
+    getStringValue(formData, "plu"),
+    "Il PLU",
+    "/merci/nuova",
+  );
   const description = getStringValue(formData, "description");
+  const container = parseContainer(getStringValue(formData, "container"), "/merci/nuova");
   const unit = parseUnit(getStringValue(formData, "unit"), "/merci/nuova");
   const alertThreshold = parseOptionalPositiveNumber(
     getStringValue(formData, "alertThreshold"),
@@ -138,13 +169,16 @@ export async function createProduct(formData: FormData) {
     "/merci/nuova",
   );
 
-  validateProductPayload(name, unit, "/merci/nuova");
+  validateProductPayload(name, code, plu, unit, container, "/merci/nuova");
 
   try {
     await prisma.product.create({
       data: {
         name,
+        code,
+        plu,
         description: description || null,
+        container,
         unit,
         alertThreshold,
       },
@@ -167,6 +201,12 @@ export async function createProduct(formData: FormData) {
 export async function updateProduct(formData: FormData) {
   const productId = parsePositiveNumber(getStringValue(formData, "productId"), "La merce");
   const name = getStringValue(formData, "name");
+  const code = parseProductCode(getStringValue(formData, "code"), `/merci/${productId}/modifica`);
+  const plu = parsePositiveNumberOrRedirect(
+    getStringValue(formData, "plu"),
+    "Il PLU",
+    `/merci/${productId}/modifica`,
+  );
   const description = getStringValue(formData, "description");
   const fallbackEditPath = `/merci/${productId}/modifica`;
   const returnPath = getReturnPath(formData, "/merci");
@@ -174,6 +214,7 @@ export async function updateProduct(formData: FormData) {
     fallbackEditPath,
     new URLSearchParams(returnPath ? { returnTo: returnPath } : {}),
   );
+  const container = parseContainer(getStringValue(formData, "container"), errorPath);
   const unit = parseUnit(getStringValue(formData, "unit"), errorPath);
   const alertThreshold = parseOptionalPositiveNumber(
     getStringValue(formData, "alertThreshold"),
@@ -181,7 +222,7 @@ export async function updateProduct(formData: FormData) {
     errorPath,
   );
 
-  validateProductPayload(name, unit, errorPath);
+  validateProductPayload(name, code, plu, unit, container, errorPath);
 
   const currentProduct = await prisma.product.findUnique({
     where: { id: productId },
@@ -211,7 +252,10 @@ export async function updateProduct(formData: FormData) {
       where: { id: productId },
       data: {
         name,
+          code,
+          plu,
         description: description || null,
+          container,
         unit,
         alertThreshold,
       },

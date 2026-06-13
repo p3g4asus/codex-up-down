@@ -1,10 +1,18 @@
 import { PrismaClient } from "@prisma/client";
-import crypto from "node:crypto";
 
 const prisma = new PrismaClient();
 
+const containerValues = [
+  "CASSETTA_BIANCA",
+  "GASTRONORM_STD",
+  "MEZZA_GASTRONORM",
+  "GASTRONORM_ALTA",
+  "SOTTOVUOTO",
+  "ALTRO",
+];
+
 function randomCode() {
-  return crypto.randomBytes(5).toString("hex").toUpperCase();
+  return String(Math.floor(10000000 + Math.random() * 90000000));
 }
 
 function randomPlu() {
@@ -33,27 +41,24 @@ async function generateUniquePlu() {
 
 async function main() {
   const products = await prisma.product.findMany({
-    where: {
-      OR: [{ code: null }, { plu: null }],
-    },
     select: {
       id: true,
-      code: true,
       plu: true,
     },
   });
 
   for (const product of products) {
-    const code = product.code ?? (await generateUniqueCode());
+    const code = await generateUniqueCode();
+    const container = containerValues[Math.floor(Math.random() * containerValues.length)];
     const plu = product.plu ?? (await generateUniquePlu());
 
     await prisma.product.update({
       where: { id: product.id },
-      data: { code, plu },
+      data: { code, plu, container },
     });
   }
 
-  console.log(`Backfill completato: ${products.length} merci aggiornate.`);
+  console.log(`Backfill completato: ${products.length} articoli aggiornati.`);
 }
 
 main()

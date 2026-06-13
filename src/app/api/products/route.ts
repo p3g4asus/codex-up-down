@@ -1,4 +1,4 @@
-import { Prisma, UnitOfMeasure } from "@prisma/client";
+import { Prisma, type ContainerType, UnitOfMeasure } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 
@@ -6,6 +6,7 @@ import {
   ensureProtectedDeleteCode,
   isProtectedDeleteCodeConfigured,
 } from "@/lib/protected-delete-code";
+import { isContainerType } from "@/lib/containers";
 import { prisma } from "@/lib/prisma";
 import { isUnitOfMeasure } from "@/lib/units";
 
@@ -45,16 +46,24 @@ function parseUnit(value: string) {
   return value as UnitOfMeasure;
 }
 
+function parseContainer(value: string) {
+  if (!isContainerType(value)) {
+    throw new Error("Seleziona un contenitore valido.");
+  }
+
+  return value as ContainerType;
+}
+
 function parseProductCode(value: string) {
   if (!value) {
-    throw new Error("Il codice alfanumerico e obbligatorio.");
+    throw new Error("Il codice articolo e obbligatorio.");
   }
 
-  if (!/^[A-Za-z0-9]+$/.test(value)) {
-    throw new Error("Il codice alfanumerico deve contenere solo lettere e numeri.");
+  if (!/^[0-9]+$/.test(value)) {
+    throw new Error("Il codice articolo deve contenere solo numeri.");
   }
 
-  return value.toUpperCase();
+  return value;
 }
 
 function parsePlu(value: string) {
@@ -123,6 +132,7 @@ export async function POST(request: Request) {
       const code = parseProductCode(getStringValue(formData, "code"));
       const plu = parsePlu(getStringValue(formData, "plu"));
       const description = getStringValue(formData, "description");
+      const container = parseContainer(getStringValue(formData, "container"));
       const unit = parseUnit(getStringValue(formData, "unit"));
       const alertThreshold = parseOptionalPositiveNumber(
         getStringValue(formData, "alertThreshold"),
@@ -157,6 +167,7 @@ export async function POST(request: Request) {
           code,
           plu,
           description: description || null,
+          container,
           unit,
           alertThreshold,
         },
@@ -172,6 +183,7 @@ export async function POST(request: Request) {
     const code = parseProductCode(getStringValue(formData, "code"));
     const plu = parsePlu(getStringValue(formData, "plu"));
     const description = getStringValue(formData, "description");
+    const container = parseContainer(getStringValue(formData, "container"));
     const unit = parseUnit(getStringValue(formData, "unit"));
     const alertThreshold = parseOptionalPositiveNumber(
       getStringValue(formData, "alertThreshold"),
@@ -188,6 +200,7 @@ export async function POST(request: Request) {
         code,
         plu,
         description: description || null,
+          container,
         unit,
         alertThreshold,
       },
@@ -197,7 +210,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ kind: "success", message: `Merce ${name} registrata.` });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return jsonError("Nome, codice alfanumerico o PLU gia esistenti.");
+      return jsonError("Nome, codice articolo o PLU gia esistenti.");
     }
 
     const message = error instanceof Error ? error.message : "Impossibile salvare la merce.";

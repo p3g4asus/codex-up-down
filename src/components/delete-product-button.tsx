@@ -91,19 +91,19 @@ export function DeleteProductButton({
                     Conferma eliminazione
                   </h2>
                   <p className="text-sm leading-6 text-slate-600">
-                    Stai per eliminare la merce {productName}. Questa operazione non puo essere annullata.
+                    Stai per eliminare l&apos;articolo {productName}. Questa operazione non può essere annullata.
                   </p>
                   {requiresProtectedDeleteCode ? (
                     <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
-                      Questa merce ha {movementCount} movimenti nello storico: per eliminarla devi inserire il codice segreto di protezione.
+                      Questo articolo ha {movementCount} movimenti nello storico: per eliminarlo devi inserire il codice segreto di protezione.
                     </p>
                   ) : null}
                   <div className="space-y-2">
                     <label htmlFor={`unit-${productId}`} className="text-sm font-semibold text-slate-900">
-                      Conferma unita di misura
+                      Conferma unità di misura
                     </label>
                     <p className="text-xs text-slate-500">
-                      Per sicurezza, seleziona l&apos;unita corretta della merce da eliminare.
+                      Per sicurezza, seleziona l&apos;unità corretta dell&apos;articolo da eliminare.
                     </p>
                   </div>
                 </div>

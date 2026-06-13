@@ -17,8 +17,8 @@ export function MovementForm({ mode, products }: MovementFormProps) {
   const isLoad = mode === "load";
   const submitLabel = isLoad ? "Conferma carico" : "Conferma scarico";
   const helperText = isLoad
-    ? "Aumenta la giacenza di una merce gia censita."
-    : "Riduce la giacenza solo se la disponibilita e sufficiente.";
+    ? "Aumenta la giacenza di un articolo già censito."
+    : "Riduce la giacenza solo se la disponibilità è sufficiente.";
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -69,7 +69,7 @@ export function MovementForm({ mode, products }: MovementFormProps) {
       </div>
       <div className="space-y-2">
         <label htmlFor="productId" className="text-sm font-semibold text-slate-900">
-          Merce
+          Articolo
         </label>
         <select
           id="productId"
@@ -80,7 +80,7 @@ export function MovementForm({ mode, products }: MovementFormProps) {
           defaultValue=""
         >
           <option value="" disabled>
-            {products.length === 0 ? "Nessuna merce disponibile" : "Seleziona una merce"}
+            {products.length === 0 ? "Nessun articolo disponibile" : "Seleziona un articolo"}
           </option>
           {products.map((product) => (
             <option key={product.id} value={product.id}>
@@ -91,7 +91,7 @@ export function MovementForm({ mode, products }: MovementFormProps) {
       </div>
       <div className="space-y-2">
         <label htmlFor="quantity" className="text-sm font-semibold text-slate-900">
-          Quantita (in unita della merce)
+          Quantità (in unità dell&apos;articolo)
         </label>
         <input
           id="quantity"

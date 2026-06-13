@@ -36,7 +36,7 @@ export default async function Home() {
   return (
     <PageShell
       title="Cruscotto magazzino supermercato"
-      description="Pannello operativo del Mercato dei Sapori di San Benedetto del Tronto per monitorare giacenze, carico e scarico merci."
+      description="Pannello operativo del Mercato dei Sapori di San Benedetto del Tronto per monitorare giacenze, carico e scarico articoli."
     >
       <section className="reveal-section reveal-delay-1 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
         <article className="relative overflow-hidden rounded-[2rem] border border-white/70 shadow-panel">
@@ -87,11 +87,11 @@ export default async function Home() {
 
       <section className="stagger-grid mt-6 grid gap-4 md:grid-cols-3">
         <article className="rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur">
-          <p className="text-sm uppercase tracking-[0.22em] text-slate-500">Merci censite</p>
+          <p className="text-sm uppercase tracking-[0.22em] text-slate-500">Articoli censiti</p>
           <p className="mt-3 text-4xl font-semibold text-slate-950">{totals.products}</p>
         </article>
         <article className="rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur">
-          <p className="text-sm uppercase tracking-[0.22em] text-slate-500">Pezzi in giacenza</p>
+          <p className="text-sm uppercase tracking-[0.22em] text-slate-500">Articoli in giacenza</p>
           <p className="mt-3 text-4xl font-semibold text-slate-950">{totals.stock}</p>
         </article>
         <article className="rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur">
@@ -105,7 +105,7 @@ export default async function Home() {
           <div className="flex items-center justify-between border-b border-slate-200/70 px-6 py-5">
             <div>
               <h2 className="text-xl font-semibold text-slate-950">Giacenza attuale</h2>
-              <p className="mt-1 text-sm text-slate-600">Elenco merci disponibili in magazzino.</p>
+              <p className="mt-1 text-sm text-slate-600">Elenco articoli disponibili in magazzino.</p>
             </div>
             <Link
               href="/merci/nuova"
@@ -116,7 +116,7 @@ export default async function Home() {
           </div>
           {products.length === 0 ? (
             <div className="px-6 py-16 text-center text-sm text-slate-600">
-              Nessuna merce presente. Inizia dalla schermata Nuova merce.
+              Nessun articolo presente. Inizia dalla schermata Nuova merce.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -125,7 +125,7 @@ export default async function Home() {
                   <tr>
                     <th className="px-6 py-4 font-medium">Nome</th>
                     <th className="px-6 py-4 font-medium">Descrizione</th>
-                    <th className="px-6 py-4 font-medium">Unita</th>
+                    <th className="px-6 py-4 font-medium">Unità</th>
                     <th className="px-6 py-4 font-medium">Giacenza</th>
                   </tr>
                 </thead>
@@ -237,7 +237,7 @@ export default async function Home() {
                         {movement.type === MovementType.LOAD ? "Carico" : "Scarico"}
                       </span>
                     </div>
-                    <p className="mt-2 text-slate-600">Quantita: {movement.quantity} {unitLabels[movement.product.unit]}</p>
+                    <p className="mt-2 text-slate-600">Quantità: {movement.quantity} {unitLabels[movement.product.unit]}</p>
                     {movement.note ? <p className="mt-1 text-slate-500">{movement.note}</p> : null}
                   </li>
                 ))}

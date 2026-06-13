@@ -1,6 +1,7 @@
 import { MovementType } from "@prisma/client";
 
 import {
+  buildForecastProductWhere,
   buildForecastRows,
   formatSignedPercent,
   getForecastSort,
@@ -26,6 +27,7 @@ function isSameDay(a: Date, b: Date) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const filters = {
+    q: searchParams.get("q") ?? undefined,
     month: searchParams.get("month") ?? undefined,
     productId: searchParams.get("productId") ?? undefined,
     coverage: searchParams.get("coverage") ?? undefined,
@@ -38,7 +40,16 @@ export async function GET(request: Request) {
 
   const [products, monthlyUnloadedToReference, movementsAfterReferenceByType] = await Promise.all([
     prisma.product.findMany({
+      where: buildForecastProductWhere(filters),
       orderBy: { name: "asc" },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        unit: true,
+        stock: true,
+        alertThreshold: true,
+      },
     }),
     prisma.movement.groupBy({
       by: ["productId"],
@@ -112,9 +123,11 @@ export async function GET(request: Request) {
   reportRows = sortForecastRows(reportRows, getForecastSort(filters), getForecastSortDir(filters));
 
   const header = [
+    "Codice articolo",
     "Articolo",
     "Vendita prevista mensile",
     "Giacenza attuale",
+    "Stock necessario per coprire le vendite mensili",
     "Vendita effettiva",
     "Data esaurimento scorte",
     "Esito esaurimento",
@@ -136,9 +149,17 @@ export async function GET(request: Request) {
     const missingUnits = getMissingUnitsToCoverMonth(row.stockNeededToMonthEnd, row.currentStockAtReference);
 
     return [
+      escapeCsv(row.productCode),
       escapeCsv(row.productName),
       escapeCsv(row.monthlyForecast !== null ? Math.round(row.monthlyForecast) : "-"),
       escapeCsv(row.currentStockAtReference),
+      escapeCsv(
+        row.stockNeededForMonthlySales === null
+          ? "Dati non sufficienti"
+          : row.stockNeededForMonthlySales < 0
+            ? "Vendita superiore al previsto"
+            : Math.round(row.stockNeededForMonthlySales),
+      ),
       escapeCsv(`${Math.round(row.unloadedToReference)} (${formatSignedPercent(row.deltaPercent)})`),
       escapeCsv(row.depletionDate ? dateFormatter.format(row.depletionDate) : "Dati non sufficienti"),
       escapeCsv(depletionOutcome),

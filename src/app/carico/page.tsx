@@ -22,7 +22,7 @@ export default async function LoadPage({ searchParams }: PageProps) {
   return (
     <PageShell
       title="Carico merci"
-      description="Seleziona una merce e registra l'incremento di quantita presente in magazzino. Ogni operazione aggiorna subito la giacenza disponibile."
+      description="Seleziona un articolo e registra l'incremento di quantità presente in magazzino. Ogni operazione aggiorna subito la giacenza disponibile."
     >
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <section className="space-y-4">
@@ -31,13 +31,13 @@ export default async function LoadPage({ searchParams }: PageProps) {
         </section>
 
         <section className="rounded-[2rem] border border-white/70 bg-[var(--card)] p-6 shadow-panel backdrop-blur">
-          <h2 className="text-xl font-semibold text-slate-950">Merci pronte al carico</h2>
+          <h2 className="text-xl font-semibold text-slate-950">Articoli pronti al carico</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Se non trovi la merce nell&apos;elenco, devi prima crearla nella schermata dedicata.
+            Se non trovi l&apos;articolo nell&apos;elenco, devi prima crearlo nella schermata dedicata.
           </p>
           {products.length === 0 ? (
             <div className="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white/70 p-5 text-sm text-slate-600">
-              Nessuna merce disponibile. Vai a <Link href="/merci/nuova" className="font-semibold text-accent">Nuova merce</Link>.
+              Nessun articolo disponibile. Vai a <Link href="/merci/nuova" className="font-semibold text-accent">Nuovo articolo</Link>.
             </div>
           ) : (
             <ul className="mt-6 space-y-3">
@@ -51,7 +51,7 @@ export default async function LoadPage({ searchParams }: PageProps) {
                   </div>
                   <p className="mt-2 text-sm leading-6 text-slate-600">{product.description || "-"}</p>
                   <p className="mt-1 text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
-                    Unita: {unitLabels[product.unit]}
+                    Unità: {unitLabels[product.unit]}
                   </p>
                 </li>
               ))}

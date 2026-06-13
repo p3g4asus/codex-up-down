@@ -1,6 +1,9 @@
-import { type Product } from "@prisma/client";
+import { type ContainerType, type Product } from "@prisma/client";
+
+import { containerLabels } from "@/lib/containers";
 
 export type ArticlesFilterParams = {
+  q?: string;
   productId?: string;
   date?: string;
   page?: string;
@@ -11,16 +14,24 @@ export type ArticlesFilterParams = {
 
 export type ArticleReportRow = {
   productId: number;
+  productCode: string;
   productName: string;
-  stockAtReference: number;
+  monthlyForecast: number | null;
+  container: ContainerType;
+  currentStock: number;
   lastLoadAt: Date | null;
 };
 
-export type ArticlesSortKey = "product" | "stock" | "lastLoadAt";
+export type ArticlesSortKey = "product" | "code" | "alertThreshold" | "container" | "lastLoadAt";
 export type ArticlesSortDir = "asc" | "desc";
 
 export const ARTICLES_PAGE_SIZE = 12;
 export const ARTICLES_PAGE_SIZE_OPTIONS = [12, 24, 48] as const;
+
+function normalizeQuery(value?: string) {
+  const normalized = value?.trim();
+  return normalized ? normalized : undefined;
+}
 
 function parseDateFilter(dateFilter?: string) {
   const normalized = (dateFilter || "").trim();
@@ -59,20 +70,41 @@ export function resolveArticlesReferenceDate(dateFilter?: string, now: Date = ne
   return endOfDay(now);
 }
 
+export function buildArticlesWhere(filters?: ArticlesFilterParams) {
+  const query = normalizeQuery(filters?.q);
+
+  return {
+    ...(query
+      ? {
+          OR: [
+            {
+              name: {
+                contains: query,
+              },
+            },
+            {
+              description: {
+                contains: query,
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+}
+
 export function buildArticlesRows(
-  products: Array<Pick<Product, "id" | "name" | "stock">>,
-  loadsAfterReferenceByProduct: Map<number, number>,
-  unloadsAfterReferenceByProduct: Map<number, number>,
+  products: Array<Pick<Product, "id" | "code" | "name" | "stock" | "alertThreshold" | "container">>,
   lastLoadAtByProduct: Map<number, Date | null>,
 ): ArticleReportRow[] {
   return products.map((product) => {
-    const loadsAfterReference = loadsAfterReferenceByProduct.get(product.id) ?? 0;
-    const unloadsAfterReference = unloadsAfterReferenceByProduct.get(product.id) ?? 0;
-
     return {
       productId: product.id,
+      productCode: product.code ?? "",
       productName: product.name,
-      stockAtReference: product.stock - loadsAfterReference + unloadsAfterReference,
+      monthlyForecast: product.alertThreshold ?? null,
+      container: product.container,
+      currentStock: product.stock,
       lastLoadAt: lastLoadAtByProduct.get(product.id) ?? null,
     } satisfies ArticleReportRow;
   });
@@ -110,7 +142,13 @@ export function getArticlesPageSize(filters?: ArticlesFilterParams) {
 
 export function getArticlesSort(filters?: ArticlesFilterParams): ArticlesSortKey {
   const sort = filters?.sort;
-  if (sort === "stock" || sort === "lastLoadAt") {
+  if (
+    sort === "product" ||
+    sort === "code" ||
+    sort === "alertThreshold" ||
+    sort === "container" ||
+    sort === "lastLoadAt"
+  ) {
     return sort;
   }
 
@@ -137,6 +175,22 @@ function compareNullableDate(a: Date | null, b: Date | null) {
   return a.getTime() - b.getTime();
 }
 
+function compareNullableNumber(a: number | null, b: number | null) {
+  if (a === null && b === null) {
+    return 0;
+  }
+
+  if (a === null) {
+    return 1;
+  }
+
+  if (b === null) {
+    return -1;
+  }
+
+  return a - b;
+}
+
 export function sortArticlesRows(rows: ArticleReportRow[], sort: ArticlesSortKey, dir: ArticlesSortDir) {
   const direction = dir === "asc" ? 1 : -1;
 
@@ -147,8 +201,16 @@ export function sortArticlesRows(rows: ArticleReportRow[], sort: ArticlesSortKey
       comparison = left.productName.localeCompare(right.productName, "it");
     }
 
-    if (sort === "stock") {
-      comparison = left.stockAtReference - right.stockAtReference;
+    if (sort === "code") {
+      comparison = Number(left.productCode) - Number(right.productCode);
+    }
+
+    if (sort === "alertThreshold") {
+      comparison = compareNullableNumber(left.monthlyForecast, right.monthlyForecast);
+    }
+
+    if (sort === "container") {
+      comparison = containerLabels[left.container].localeCompare(containerLabels[right.container], "it");
     }
 
     if (sort === "lastLoadAt") {

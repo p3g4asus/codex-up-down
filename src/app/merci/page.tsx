@@ -5,6 +5,7 @@ import { FeedbackBanner } from "@/components/feedback-banner";
 import { ProductSearchForm } from "@/components/product-search-form";
 import { PageShell } from "@/components/page-shell";
 import { withBasePath } from "@/lib/base-path";
+import { containerLabels } from "@/lib/containers";
 import { prisma } from "@/lib/prisma";
 import { unitLabels } from "@/lib/units";
 
@@ -94,7 +95,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   return (
     <PageShell
       title="Gestione merci"
-      description="Consulta l'anagrafica completa delle merci, apri la schermata di modifica e rimuovi solo gli articoli che non hanno ancora movimenti nello storico."
+      description="Consulta l'anagrafica completa degli articoli, apri la schermata di modifica e rimuovi solo quelli che non hanno ancora movimenti nello storico."
     >
       <div className="space-y-4">
         <FeedbackBanner kind={feedback?.kind} message={feedback?.message} />
@@ -103,14 +104,14 @@ export default async function ProductsPage({ searchParams }: PageProps) {
       <section className="mt-4 rounded-[2rem] border border-white/70 bg-[var(--card)] shadow-panel backdrop-blur">
         <div className="flex items-center justify-between border-b border-slate-200/70 px-6 py-5">
           <div>
-            <h2 className="text-xl font-semibold text-slate-950">Anagrafica merci</h2>
-            <p className="mt-1 text-sm text-slate-600">Modifica i dati descrittivi o elimina le merci mai movimentate.</p>
+            <h2 className="text-xl font-semibold text-slate-950">Anagrafica articoli</h2>
+            <p className="mt-1 text-sm text-slate-600">Modifica i dati descrittivi o elimina gli articoli mai movimentati.</p>
           </div>
           <Link
             href="/merci/nuova"
             className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-strong"
           >
-            Nuova merce
+            Nuovo articolo
           </Link>
         </div>
 
@@ -121,8 +122,8 @@ export default async function ProductsPage({ searchParams }: PageProps) {
         {products.length === 0 ? (
           <div className="px-6 py-16 text-center text-sm text-slate-600">
             {query
-              ? `Nessuna merce trovata per ${query}.`
-              : "Nessuna merce disponibile. Inseriscine una nuova per iniziare."}
+              ? `Nessun articolo trovato per ${query}.`
+              : "Nessun articolo disponibile. Inseriscine uno nuovo per iniziare."}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -139,7 +140,8 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                       Descrizione{sort === "description" ? (dir === "asc" ? " ↑" : " ↓") : ""}
                     </a>
                   </th>
-                  <th className="px-6 py-4 font-medium">Unita</th>
+                  <th className="px-6 py-4 font-medium">Unità</th>
+                  <th className="px-6 py-4 font-medium">Contenitore</th>
                   <th className="px-6 py-4 font-medium">Codice</th>
                   <th className="px-6 py-4 font-medium">PLU</th>
                   <th className="px-6 py-4 font-medium">
@@ -167,6 +169,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                       <td className="px-6 py-4 font-semibold text-slate-900">{product.name}</td>
                       <td className="px-6 py-4 leading-6 text-slate-600">{product.description || "-"}</td>
                       <td className="px-6 py-4 text-slate-600">{unitLabels[product.unit]}</td>
+                      <td className="px-6 py-4 text-slate-600">{containerLabels[product.container]}</td>
                       <td className="px-6 py-4 text-slate-600">{product.code ?? "-"}</td>
                       <td className="px-6 py-4 text-slate-600">{product.plu ?? "-"}</td>
                       <td className="px-6 py-4 text-slate-600">{product.alertThreshold ?? "-"}</td>
@@ -189,7 +192,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                         </div>
                         {product._count.movements > 0 ? (
                           <p className="mt-2 text-xs leading-5 text-slate-500">
-                            Eliminazione protetta: per merci con movimenti viene richiesto un codice segreto.
+                            Eliminazione protetta: per articoli con movimenti viene richiesto un codice segreto.
                           </p>
                         ) : null}
                       </td>
